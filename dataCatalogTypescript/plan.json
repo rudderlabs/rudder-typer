@@ -1,0 +1,42 @@
+{
+  "create_time": "2024-02-26T11:52:03.590Z",
+  "display_name": "Data Catalog Event Tracking",
+  "name": "workspaces/1Rgdwcyd93G37qqMOs03KWiTQd2/tracking-plans/tp_2cu4qwiLI03Pvkt4TnVaXPvbrBF",
+  "rules": {
+    "events": [
+      {
+        "description": "when user adds new event",
+        "id": "ev_2bIn2EOX1XfwHy5poijPFR6wPRK",
+        "name": "catalogAddNewEvent",
+        "rules": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "context": {},
+            "properties": {
+              "properties": {
+                "catagory": {
+                  "type": ["string"]
+                },
+                "description": {
+                  "type": ["string"]
+                },
+                "eventName": {
+                  "type": ["string"]
+                },
+                "type": {
+                  "type": ["string"]
+                }
+              },
+              "type": "object"
+            },
+            "traits": {}
+          },
+          "type": "object"
+        },
+        "version": "2-0-0"
+      }
+    ]
+  },
+  "update_time": "2024-02-26T11:52:03.590Z",
+  "version": 1
+}

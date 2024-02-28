@@ -1,0 +1,14 @@
+{
+  "name": "@rudderlabs/rudder-typer-webapp",
+  "version": "1.0.0-beta.6",
+  "description": "Rudder-Typer analytics libraries are based on your pre-defined tracking plan specifications.",
+  "main": "./dist/src/cli/index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "rudderlabs",
+  "license": "MIT",
+  "dependencies": {
+    "rudder-sdk-js": "^2.48.2"
+  }
+}
