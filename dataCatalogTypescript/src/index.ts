@@ -18,14 +18,14 @@ export type ViolationHandler = (
 ) => void
 
 let analytics: () => any | undefined = () => {
-  return window.analytics
+  return window.rudderanalytics
 }
 
 /** Options to customize the runtime behavior of a RudderTyper client. */
 export interface RudderTyperOptions {
   /**
    * Underlying analytics instance where analytics calls are forwarded on to.
-   * Defaults to window.analytics.
+   * Defaults to window.rudderanalytics.
    */
   analytics?: any
   /**
@@ -54,7 +54,7 @@ export interface RudderTyperOptions {
  */
 export function setRudderTyperOptions(options: RudderTyperOptions) {
   analytics = options.analytics
-    ? () => options.analytics || window.analytics
+    ? () => options.analytics || window.rudderanalytics
     : analytics
 }
 

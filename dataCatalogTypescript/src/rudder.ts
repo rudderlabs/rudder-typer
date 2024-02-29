@@ -7,7 +7,7 @@
  */
 declare global {
   interface Window {
-    analytics: any
+    rudderanalytics: any
   }
 }
 
