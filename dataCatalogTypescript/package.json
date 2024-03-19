@@ -1,6 +1,6 @@
 {
   "name": "@rudderlabs/rudder-typer-webapp",
-  "version": "1.0.0-beta.10",
+  "version": "1.0.0-beta.13",
   "description": "Rudder-Typer analytics libraries are based on your pre-defined tracking plan specifications.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

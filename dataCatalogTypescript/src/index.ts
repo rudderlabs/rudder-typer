@@ -6,10 +6,50 @@ import * as Rudder from './rudder'
 import { apiCallback } from 'rudder-sdk-js'
 
 export interface CatalogAddNewEvent {
-  catagory?: string
-  description?: string
-  eventName?: string
-  type?: string
+  category?: string
+  eventName: string
+  eventType: string
+}
+export interface TrackingPlanDropEventsTriggered {
+  trackingPlanId: string
+  trackingPlanName: string
+}
+export interface TrackingPlanCreated {
+  trackingPlanId: string
+  trackingPlanName: string
+}
+export interface TrackingPlanConnected {
+  sourceId: any[] | string
+  sourceName: any[] | string
+  trackingPlanId: string
+  trackingPlanName: string
+}
+export interface CatalogAddNewProperty {
+  propertyName: string
+  propertyType?: string
+}
+export interface TrackingPlanEventsViewed {
+  trackingPlanId: string
+}
+export interface CatalogDeleteEvent {
+  category?: string
+  eventName: string
+  eventType: string
+}
+export interface CatalogDeleteProperty {
+  propertyName: string
+  propertyType?: string
+}
+export interface TrackingPlanEdited {
+  trackingPlanId: string
+  trackingPlanName: string
+}
+export interface ClickAddTrackingPlan {
+  trackingPlanImportType: string
+}
+export interface TrackingPlanDraftCreated {
+  trackingPlanId: string
+  trackingPlanName: string
 }
 
 export type ViolationHandler = (
@@ -71,8 +111,8 @@ function withRudderTyperContext(message: Rudder.Options = {}): Rudder.Options {
         sdk: 'analytics.js',
         language: 'typescript',
         rudderTyperVersion: '1.0.0-beta.5',
-        trackingPlanId: 'tp_2cu4qwiLI03Pvkt4TnVaXPvbrBF',
-        trackingPlanVersion: '1',
+        trackingPlanId: 'tp_2dHb5Dq7Ikav1AT3b2rpeQVoIES',
+        trackingPlanVersion: '9',
       },
     },
   }
@@ -80,14 +120,64 @@ function withRudderTyperContext(message: Rudder.Options = {}): Rudder.Options {
 
 /**
  * @typedef CatalogAddNewEvent
- * @property {string} [catagory] -
- * @property {string} [description] -
- * @property {string} [eventName] -
- * @property {string} [type] -
+ * @property {string} [category] -
+ * @property {string} eventName -
+ * @property {string} eventType -
+ */
+/**
+ * @typedef TrackingPlanDropEventsTriggered
+ * @property {string} trackingPlanId -
+ * @property {string} trackingPlanName -
+ */
+/**
+ * @typedef TrackingPlanCreated
+ * @property {string} trackingPlanId -
+ * @property {string} trackingPlanName -
+ */
+/**
+ * @typedef TrackingPlanConnected
+ * @property {any[] | string} sourceId -
+ * @property {any[] | string} sourceName -
+ * @property {string} trackingPlanId -
+ * @property {string} trackingPlanName -
+ */
+/**
+ * @typedef CatalogAddNewProperty
+ * @property {string} propertyName -
+ * @property {string} [propertyType] -
+ */
+/**
+ * @typedef TrackingPlanEventsViewed
+ * @property {string} trackingPlanId -
+ */
+/**
+ * @typedef CatalogDeleteEvent
+ * @property {string} [category] -
+ * @property {string} eventName -
+ * @property {string} eventType -
+ */
+/**
+ * @typedef CatalogDeleteProperty
+ * @property {string} propertyName -
+ * @property {string} [propertyType] -
+ */
+/**
+ * @typedef TrackingPlanEdited
+ * @property {string} trackingPlanId -
+ * @property {string} trackingPlanName -
+ */
+/**
+ * @typedef ClickAddTrackingPlan
+ * @property {string} trackingPlanImportType -
+ */
+/**
+ * @typedef TrackingPlanDraftCreated
+ * @property {string} trackingPlanId -
+ * @property {string} trackingPlanName -
  */
 
 /**
- * when user adds new event
+ * Fires a 'catalogAddNewEvent' track call.
  *
  * @param {CatalogAddNewEvent} [props] - The analytics properties that will be sent to RudderStack.
  * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
@@ -103,6 +193,236 @@ export function catalogAddNewEvent(
   if (a) {
     a.track(
       'catalogAddNewEvent',
+      props || {},
+      withRudderTyperContext(options),
+      callback
+    )
+  }
+}
+/**
+ * Fires a 'trackingPlanDropEventsTriggered' track call.
+ *
+ * @param {TrackingPlanDropEventsTriggered} [props] - The analytics properties that will be sent to RudderStack.
+ * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+ * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+ * 		call is fired.
+ */
+export function trackingPlanDropEventsTriggered(
+  props?: TrackingPlanDropEventsTriggered,
+  options?: Rudder.Options,
+  callback?: apiCallback
+): void {
+  const a = analytics()
+  if (a) {
+    a.track(
+      'trackingPlanDropEventsTriggered',
+      props || {},
+      withRudderTyperContext(options),
+      callback
+    )
+  }
+}
+/**
+ * Fires a 'trackingPlanCreated' track call.
+ *
+ * @param {TrackingPlanCreated} [props] - The analytics properties that will be sent to RudderStack.
+ * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+ * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+ * 		call is fired.
+ */
+export function trackingPlanCreated(
+  props?: TrackingPlanCreated,
+  options?: Rudder.Options,
+  callback?: apiCallback
+): void {
+  const a = analytics()
+  if (a) {
+    a.track(
+      'trackingPlanCreated',
+      props || {},
+      withRudderTyperContext(options),
+      callback
+    )
+  }
+}
+/**
+ * Fires a 'trackingPlanConnected' track call.
+ *
+ * @param {TrackingPlanConnected} [props] - The analytics properties that will be sent to RudderStack.
+ * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+ * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+ * 		call is fired.
+ */
+export function trackingPlanConnected(
+  props?: TrackingPlanConnected,
+  options?: Rudder.Options,
+  callback?: apiCallback
+): void {
+  const a = analytics()
+  if (a) {
+    a.track(
+      'trackingPlanConnected',
+      props || {},
+      withRudderTyperContext(options),
+      callback
+    )
+  }
+}
+/**
+ * Fires a 'catalogAddNewProperty' track call.
+ *
+ * @param {CatalogAddNewProperty} [props] - The analytics properties that will be sent to RudderStack.
+ * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+ * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+ * 		call is fired.
+ */
+export function catalogAddNewProperty(
+  props?: CatalogAddNewProperty,
+  options?: Rudder.Options,
+  callback?: apiCallback
+): void {
+  const a = analytics()
+  if (a) {
+    a.track(
+      'catalogAddNewProperty',
+      props || {},
+      withRudderTyperContext(options),
+      callback
+    )
+  }
+}
+/**
+ * Fires a 'trackingPlanEventsViewed' track call.
+ *
+ * @param {TrackingPlanEventsViewed} [props] - The analytics properties that will be sent to RudderStack.
+ * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+ * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+ * 		call is fired.
+ */
+export function trackingPlanEventsViewed(
+  props?: TrackingPlanEventsViewed,
+  options?: Rudder.Options,
+  callback?: apiCallback
+): void {
+  const a = analytics()
+  if (a) {
+    a.track(
+      'trackingPlanEventsViewed',
+      props || {},
+      withRudderTyperContext(options),
+      callback
+    )
+  }
+}
+/**
+ * Fires a 'catalogDeleteEvent' track call.
+ *
+ * @param {CatalogDeleteEvent} [props] - The analytics properties that will be sent to RudderStack.
+ * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+ * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+ * 		call is fired.
+ */
+export function catalogDeleteEvent(
+  props?: CatalogDeleteEvent,
+  options?: Rudder.Options,
+  callback?: apiCallback
+): void {
+  const a = analytics()
+  if (a) {
+    a.track(
+      'catalogDeleteEvent',
+      props || {},
+      withRudderTyperContext(options),
+      callback
+    )
+  }
+}
+/**
+ * Fires a 'catalogDeleteProperty' track call.
+ *
+ * @param {CatalogDeleteProperty} [props] - The analytics properties that will be sent to RudderStack.
+ * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+ * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+ * 		call is fired.
+ */
+export function catalogDeleteProperty(
+  props?: CatalogDeleteProperty,
+  options?: Rudder.Options,
+  callback?: apiCallback
+): void {
+  const a = analytics()
+  if (a) {
+    a.track(
+      'catalogDeleteProperty',
+      props || {},
+      withRudderTyperContext(options),
+      callback
+    )
+  }
+}
+/**
+ * Fires a 'trackingPlanEdited' track call.
+ *
+ * @param {TrackingPlanEdited} [props] - The analytics properties that will be sent to RudderStack.
+ * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+ * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+ * 		call is fired.
+ */
+export function trackingPlanEdited(
+  props?: TrackingPlanEdited,
+  options?: Rudder.Options,
+  callback?: apiCallback
+): void {
+  const a = analytics()
+  if (a) {
+    a.track(
+      'trackingPlanEdited',
+      props || {},
+      withRudderTyperContext(options),
+      callback
+    )
+  }
+}
+/**
+ * Fires a 'clickAddTrackingPlan' track call.
+ *
+ * @param {ClickAddTrackingPlan} [props] - The analytics properties that will be sent to RudderStack.
+ * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+ * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+ * 		call is fired.
+ */
+export function clickAddTrackingPlan(
+  props?: ClickAddTrackingPlan,
+  options?: Rudder.Options,
+  callback?: apiCallback
+): void {
+  const a = analytics()
+  if (a) {
+    a.track(
+      'clickAddTrackingPlan',
+      props || {},
+      withRudderTyperContext(options),
+      callback
+    )
+  }
+}
+/**
+ * Fires a 'trackingPlanDraftCreated' track call.
+ *
+ * @param {TrackingPlanDraftCreated} [props] - The analytics properties that will be sent to RudderStack.
+ * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+ * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+ * 		call is fired.
+ */
+export function trackingPlanDraftCreated(
+  props?: TrackingPlanDraftCreated,
+  options?: Rudder.Options,
+  callback?: apiCallback
+): void {
+  const a = analytics()
+  if (a) {
+    a.track(
+      'trackingPlanDraftCreated',
       props || {},
       withRudderTyperContext(options),
       callback
@@ -126,7 +446,7 @@ const clientAPI = {
    */
   setRudderTyperOptions,
   /**
-   * when user adds new event
+   * Fires a 'catalogAddNewEvent' track call.
    *
    * @param {CatalogAddNewEvent} [props] - The analytics properties that will be sent to RudderStack.
    * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
@@ -134,6 +454,96 @@ const clientAPI = {
    * 		call is fired.
    */
   catalogAddNewEvent,
+  /**
+   * Fires a 'trackingPlanDropEventsTriggered' track call.
+   *
+   * @param {TrackingPlanDropEventsTriggered} [props] - The analytics properties that will be sent to RudderStack.
+   * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+   * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+   * 		call is fired.
+   */
+  trackingPlanDropEventsTriggered,
+  /**
+   * Fires a 'trackingPlanCreated' track call.
+   *
+   * @param {TrackingPlanCreated} [props] - The analytics properties that will be sent to RudderStack.
+   * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+   * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+   * 		call is fired.
+   */
+  trackingPlanCreated,
+  /**
+   * Fires a 'trackingPlanConnected' track call.
+   *
+   * @param {TrackingPlanConnected} [props] - The analytics properties that will be sent to RudderStack.
+   * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+   * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+   * 		call is fired.
+   */
+  trackingPlanConnected,
+  /**
+   * Fires a 'catalogAddNewProperty' track call.
+   *
+   * @param {CatalogAddNewProperty} [props] - The analytics properties that will be sent to RudderStack.
+   * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+   * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+   * 		call is fired.
+   */
+  catalogAddNewProperty,
+  /**
+   * Fires a 'trackingPlanEventsViewed' track call.
+   *
+   * @param {TrackingPlanEventsViewed} [props] - The analytics properties that will be sent to RudderStack.
+   * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+   * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+   * 		call is fired.
+   */
+  trackingPlanEventsViewed,
+  /**
+   * Fires a 'catalogDeleteEvent' track call.
+   *
+   * @param {CatalogDeleteEvent} [props] - The analytics properties that will be sent to RudderStack.
+   * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+   * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+   * 		call is fired.
+   */
+  catalogDeleteEvent,
+  /**
+   * Fires a 'catalogDeleteProperty' track call.
+   *
+   * @param {CatalogDeleteProperty} [props] - The analytics properties that will be sent to RudderStack.
+   * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+   * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+   * 		call is fired.
+   */
+  catalogDeleteProperty,
+  /**
+   * Fires a 'trackingPlanEdited' track call.
+   *
+   * @param {TrackingPlanEdited} [props] - The analytics properties that will be sent to RudderStack.
+   * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+   * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+   * 		call is fired.
+   */
+  trackingPlanEdited,
+  /**
+   * Fires a 'clickAddTrackingPlan' track call.
+   *
+   * @param {ClickAddTrackingPlan} [props] - The analytics properties that will be sent to RudderStack.
+   * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+   * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+   * 		call is fired.
+   */
+  clickAddTrackingPlan,
+  /**
+   * Fires a 'trackingPlanDraftCreated' track call.
+   *
+   * @param {TrackingPlanDraftCreated} [props] - The analytics properties that will be sent to RudderStack.
+   * @param {Object} [options] - A dictionary of options. For example, enable or disable specific destinations for the call.
+   * @param {Function} [callback] - An optional callback called after a short timeout after the analytics
+   * 		call is fired.
+   */
+  trackingPlanDraftCreated,
 }
 
 export const RudderTyperAnalytics = new Proxy<typeof clientAPI>(clientAPI, {
