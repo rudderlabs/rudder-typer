@@ -1,0 +1,291 @@
+{
+  "config": {
+    "group": "traits",
+    "identify": "traits",
+    "page": "properties",
+    "screen": "properties",
+    "track": "properties"
+  },
+  "createdAt": "2024-03-05T19:42:45.616Z",
+  "creationType": "Manual",
+  "description": "Analytics for Data Catalog and Tracking Plan",
+  "id": "tp_2dHb5Dq7Ikav1AT3b2rpeQVoIES",
+  "name": "Catalog Event Tracking",
+  "rules": {
+    "events": [
+      {
+        "description": "",
+        "id": "ev_2dHOWGQueF2dKPsvf7RJZyFW2gD",
+        "name": "catalogAddNewEvent",
+        "rules": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "properties": {
+              "additionalProperties": false,
+              "properties": {
+                "category": {
+                  "type": ["string"]
+                },
+                "eventName": {
+                  "type": ["string"]
+                },
+                "eventType": {
+                  "type": ["string"]
+                }
+              },
+              "required": ["eventType", "eventName"],
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      },
+      {
+        "description": "",
+        "id": "ev_2dHVbAFFOzhVWMgy4IdcGTd85DB",
+        "name": "trackingPlanDropEventsTriggered",
+        "rules": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "properties": {
+              "additionalProperties": false,
+              "properties": {
+                "trackingPlanId": {
+                  "type": ["string"]
+                },
+                "trackingPlanName": {
+                  "type": ["string"]
+                }
+              },
+              "required": ["trackingPlanId", "trackingPlanName"],
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      },
+      {
+        "description": "",
+        "id": "ev_2dHVcgqYWoswwFrlytJ2ZZgj7zT",
+        "name": "trackingPlanCreated",
+        "rules": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "properties": {
+              "additionalProperties": false,
+              "properties": {
+                "trackingPlanId": {
+                  "type": ["string"]
+                },
+                "trackingPlanName": {
+                  "type": ["string"]
+                }
+              },
+              "required": ["trackingPlanId", "trackingPlanName"],
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      },
+      {
+        "description": "",
+        "id": "ev_2dHVeY1cyFxr22r5D7HuEL02o5z",
+        "name": "trackingPlanConnected",
+        "rules": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "properties": {
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "type": ["array", "string"]
+                },
+                "sourceName": {
+                  "type": ["array", "string"]
+                },
+                "trackingPlanId": {
+                  "type": ["string"]
+                },
+                "trackingPlanName": {
+                  "type": ["string"]
+                }
+              },
+              "required": ["trackingPlanId", "trackingPlanName", "sourceId", "sourceName"],
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      },
+      {
+        "description": "",
+        "id": "ev_2dHVHl8eEgcvfqqPUVSe6mvOH8H",
+        "name": "catalogAddNewProperty",
+        "rules": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "properties": {
+              "additionalProperties": false,
+              "properties": {
+                "propertyName": {
+                  "type": ["string"]
+                },
+                "propertyType": {
+                  "type": ["string"]
+                }
+              },
+              "required": ["propertyName"],
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      },
+      {
+        "description": "",
+        "id": "ev_2dHVhs7coz8XONMAy5MHNR8W6MW",
+        "name": "trackingPlanEventsViewed",
+        "rules": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "properties": {
+              "additionalProperties": false,
+              "properties": {
+                "trackingPlanId": {
+                  "type": ["string"]
+                }
+              },
+              "required": ["trackingPlanId"],
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      },
+      {
+        "description": "",
+        "id": "ev_2dHVJuD1fisdhMJhWjLefkWbgHL",
+        "name": "catalogDeleteEvent",
+        "rules": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "properties": {
+              "additionalProperties": false,
+              "properties": {
+                "category": {
+                  "type": ["string"]
+                },
+                "eventName": {
+                  "type": ["string"]
+                },
+                "eventType": {
+                  "type": ["string"]
+                }
+              },
+              "required": ["eventName", "eventType"],
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      },
+      {
+        "description": "",
+        "id": "ev_2dHVLTohcxZVKqzhHP6zddZxFm4",
+        "name": "catalogDeleteProperty",
+        "rules": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "properties": {
+              "additionalProperties": false,
+              "properties": {
+                "propertyName": {
+                  "type": ["string"]
+                },
+                "propertyType": {
+                  "type": ["string"]
+                }
+              },
+              "required": ["propertyName"],
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      },
+      {
+        "description": "",
+        "id": "ev_2dHVm47DBviVf4uCkYt1NTyB7Qn",
+        "name": "trackingPlanEdited",
+        "rules": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "properties": {
+              "additionalProperties": false,
+              "properties": {
+                "trackingPlanId": {
+                  "type": ["string"]
+                },
+                "trackingPlanName": {
+                  "type": ["string"]
+                }
+              },
+              "required": ["trackingPlanId", "trackingPlanName"],
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      },
+      {
+        "description": "",
+        "id": "ev_2dHVPfy3LoaGoib3oXgFZ1do7wq",
+        "name": "clickAddTrackingPlan",
+        "rules": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "properties": {
+              "additionalProperties": false,
+              "properties": {
+                "trackingPlanImportType": {
+                  "type": ["string"]
+                }
+              },
+              "required": ["trackingPlanImportType"],
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      },
+      {
+        "description": "",
+        "id": "ev_2dHVqBFB5AfntsTsuwcLjKblHOm",
+        "name": "trackingPlanDraftCreated",
+        "rules": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "properties": {
+              "additionalProperties": false,
+              "properties": {
+                "trackingPlanId": {
+                  "type": ["string"]
+                },
+                "trackingPlanName": {
+                  "type": ["string"]
+                }
+              },
+              "required": ["trackingPlanId", "trackingPlanName"],
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      }
+    ]
+  },
+  "updatedAt": "2024-03-14T10:43:50.237Z",
+  "version": 9,
+  "workspaceId": "1Rgdwcyd93G37qqMOs03KWiTQd2"
+}
