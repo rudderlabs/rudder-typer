@@ -9,38 +9,70 @@ import { APIError } from '../types';
 export namespace RudderAPI {
   export type GetTrackingPlanResponse = TrackingPlan;
 
+  export type GetTrackingPlanEventsResponse = TrackingPlanEvents;
+
+  export type GetTrackingPlanEventsRulesResponse = {
+    name: string;
+    description?: string;
+    rules: JSONSchema7;
+  };
+
   export type ListTrackingPlansResponse = {
     tracking_plans: TrackingPlan[];
+  };
+
+  export type ListTrackingPlansResponseV2 = {
+    trackingPlans: TrackingPlan[];
   };
 
   export type TrackingPlan = {
     name: string;
     display_name: string;
     version: string;
+    id: string;
     rules: {
       events: RuleMetadata[];
-      global: RuleMetadata;
-      identify_traits: RuleMetadata;
-      group_traits: RuleMetadata;
+      global?: RuleMetadata;
+      identify_traits?: RuleMetadata;
+      group_traits?: RuleMetadata;
     };
     create_time: Date;
     update_time: Date;
+    createdAt: Date;
+    updatedAt: Date;
+    creationType: string;
+    workspaceId: string;
+  };
+
+  export type TrackingPlanEvents = {
+    data: {
+      id: string;
+      name: string;
+      description: string;
+      eventType: string;
+      categoryId: string;
+      workspaceId: string;
+      createdBy: string;
+      updatedBy: string;
+      createdAt: Date;
+      updatedAt: Date;
+      identitySection: string;
+      additionalProperties: boolean;
+    }[];
   };
 
   export type RuleMetadata = {
     name: string;
     description?: string;
     rules: JSONSchema7;
-    version: number;
   };
 
   export type ListWorkspacesResponse = Workspace;
 
   export type Workspace = {
     name: string;
-    display_name: string;
     id: string;
-    create_time: Date;
+    createdAt: Date;
   };
 }
 
@@ -49,17 +81,54 @@ export async function fetchTrackingPlan(options: {
   id: string;
   token: string;
   email: string;
+  APIVersion: string;
 }): Promise<RudderAPI.TrackingPlan> {
-  const url = `trackingplans/${options.id}`;
+  const url =
+    options.APIVersion === 'v1' ? `trackingplans/${options.id}` : `tracking-plans/${options.id}`;
   const response = await apiGet<RudderAPI.GetTrackingPlanResponse>(
     url,
     options.token,
     options.email,
   );
 
-  response.create_time = new Date(response.create_time);
-  response.update_time = new Date(response.update_time);
+  if (options.APIVersion === 'v1') {
+    response.create_time = new Date(response.create_time);
+    response.update_time = new Date(response.update_time);
+  } else {
+    response.createdAt = new Date(response.createdAt);
+    response.updatedAt = new Date(response.updatedAt);
+  }
 
+  if (!response.rules) {
+    const url = `tracking-plans/${options.id}/events`;
+    const eventsResponse = await apiGet<RudderAPI.GetTrackingPlanEventsResponse>(
+      url,
+      options.token,
+      options.email,
+    );
+    let eventsRulesResponse: RudderAPI.RuleMetadata[];
+    if (eventsResponse) {
+      const eventsRulesResponsePromise = eventsResponse.data
+        .filter(ev => ev.eventType === 'track')
+        .map(async ev => {
+          const url = `tracking-plans/${options.id}/events/${ev.id}`;
+          const eventsRulesResponse = await apiGet<RudderAPI.GetTrackingPlanEventsRulesResponse>(
+            url,
+            options.token,
+            options.email,
+          );
+          return {
+            name: eventsRulesResponse.name,
+            description: eventsRulesResponse.description,
+            rules: eventsRulesResponse.rules,
+          };
+        });
+      eventsRulesResponse = await Promise.all(eventsRulesResponsePromise);
+      response.rules = {
+        events: eventsRulesResponse,
+      };
+    }
+  }
   return sanitizeTrackingPlan(response);
 }
 
@@ -69,17 +138,31 @@ export async function fetchTrackingPlans(options: {
   token: string;
   email: string;
 }): Promise<RudderAPI.TrackingPlan[]> {
-  const url = 'trackingplans';
+  let url = 'trackingplans';
   const response = await apiGet<RudderAPI.ListTrackingPlansResponse>(
     url,
     options.token,
     options.email,
   );
-  return response.tracking_plans.map(tp => ({
+  response.tracking_plans.map(tp => ({
     ...tp,
-    create_time: new Date(tp.create_time),
-    update_time: new Date(tp.update_time),
+    createdAt: new Date(tp.create_time),
+    updatedAt: new Date(tp.update_time),
   }));
+
+  url = 'tracking-plans';
+  const responseV2 = await apiGet<RudderAPI.ListTrackingPlansResponseV2>(
+    url,
+    options.token,
+    options.email,
+  );
+  responseV2.trackingPlans.map(tp => ({
+    ...tp,
+    createdAt: new Date(tp.createdAt),
+    updatedAt: new Date(tp.updatedAt),
+  }));
+
+  return response.tracking_plans.concat(responseV2.trackingPlans);
 }
 
 // fetchWorkspace lists the workspace found with a given Rudder API token.
@@ -94,7 +177,7 @@ export async function fetchWorkspace(options: {
   );
   return {
     ...resp,
-    create_time: new Date(resp.create_time),
+    createdAt: new Date(resp.createdAt),
   };
 }
 
@@ -138,10 +221,16 @@ export async function validateToken(
 async function apiGet<Response>(url: string, token: string, email: string): Promise<Response> {
   const resp = got(url, {
     baseUrl:
-      url === 'workspace' ? 'https://api.rudderstack.com/v1' : 'https://api.rudderstack.com/v1/dg',
+      url === 'workspace'
+        ? 'https://api.rudderstack.com/v1'
+        : url.includes('trackingplans')
+        ? 'https://api.rudderstack.com/v1/dg'
+        : 'https://api.rudderstack.com/v2/catalog',
     headers: {
-      'User-Agent': `RudderTyper: ${version})`,
-      Authorization: `Basic ${Buffer.from(email + ':' + token).toString('base64')}`,
+      authorization:
+        url === 'workspace' || url.includes('trackingplans')
+          ? `Basic ${Buffer.from(email + ':' + token).toString('base64')}`
+          : 'Bearer ' + token,
     },
     json: true,
     timeout: 10000, // ms

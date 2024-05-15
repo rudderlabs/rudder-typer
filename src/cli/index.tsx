@@ -12,6 +12,7 @@ import { machineId } from 'node-machine-id';
 import { version } from '../../package.json';
 import { loadTrackingPlan } from './api';
 import yargs from 'yargs';
+import { getTrackingPlanName } from './api/trackingplans';
 
 export type StandardProps = AnalyticsProps & {
   configPath: string;
@@ -244,7 +245,7 @@ async function rudderTyperLibraryProperties(
     if (cfg && cfg.trackingPlans.length > 0) {
       const tp = await loadTrackingPlan(args.config, cfg.trackingPlans[0]);
       if (tp) {
-        trackingPlanName = tp.display_name;
+        trackingPlanName = getTrackingPlanName(tp);
       }
     }
   } catch {}

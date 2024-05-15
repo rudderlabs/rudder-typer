@@ -44,6 +44,10 @@ export type TrackingPlanConfig = {
    * this Tracking Plan's client should be output.
    */
   path: string;
+  /**
+   * The API version to use for the tracking plan
+   */
+  APIVersion: string;
 };
 
 // Ignore Prettier here, since otherwise prettier adds quite a bit of spacing
@@ -81,6 +85,7 @@ const ConfigSchema = Joi.object().required().keys({
 			id: Joi.string().required().min(1),
 			workspaceSlug: Joi.string().required().min(1),
 			path: Joi.string().required().min(1),
+      APIVersion: Joi.string().required().min(1),
 		})
 	),
 })

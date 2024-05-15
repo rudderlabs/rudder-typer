@@ -23,6 +23,7 @@ import Fuse from 'fuse.js';
 import { StandardProps, DebugContext } from '../index';
 import { ErrorContext, WrappedError, wrapError } from './error';
 import { APIError } from '../types';
+import { getTrackingPlanName } from '../api/trackingplans';
 
 const readir = promisify(fs.readdir);
 
@@ -649,20 +650,23 @@ const TrackingPlanPrompt: React.FC<TrackingPlanPromptProps> = ({
   }, []);
 
   const onSelect = (item: Item) => {
-    const trackingPlan = trackingPlans.find(tp => tp.name === item.value)!;
+    const trackingPlan = trackingPlans.find(tp => getTrackingPlanName(tp) === item.value)!;
     onSubmit(trackingPlan);
   };
 
   // Sort the Tracking Plan alphabetically by display name.
   const choices = orderBy(
     trackingPlans.map(tp => ({
-      label: tp.display_name,
-      value: tp.name,
+      label: getTrackingPlanName(tp),
+      value: getTrackingPlanName(tp),
     })),
     'label',
+
     'asc',
   );
-  let initialIndex = choices.findIndex(c => !!trackingPlan && c.value === trackingPlan.name);
+  let initialIndex = choices.findIndex(
+    c => !!trackingPlan && c.value === getTrackingPlanName(trackingPlan),
+  );
   initialIndex = initialIndex === -1 ? 0 : initialIndex;
 
   const tips = [
@@ -733,16 +737,19 @@ const SummaryPrompt: React.FC<SummaryPromptProps> = ({
         client.moduleTarget = 'CommonJS';
         client.scriptTarget = 'ES5';
       }
-      const tp = parseTrackingPlanName(trackingPlan.name);
+      const tp = !!trackingPlan.creationType
+        ? { id: trackingPlan.id, workspaceSlug: trackingPlan.workspaceId, APIVersion: 'v2' }
+        : parseTrackingPlanName(trackingPlan.name);
       try {
         const config: Config = {
           client,
           trackingPlans: [
             {
-              name: trackingPlan.display_name,
+              name: getTrackingPlanName(trackingPlan),
               id: tp.id,
               workspaceSlug: tp.workspaceSlug,
               path,
+              APIVersion: tp.APIVersion,
             },
           ],
         };
@@ -770,9 +777,10 @@ const SummaryPrompt: React.FC<SummaryPromptProps> = ({
     { label: 'Language', value: language },
     { label: 'Directory', value: path },
     { label: 'API Token', value: `${workspace.name} (${token.slice(0, 10)}...)` },
+    { label: 'API Version', value: trackingPlan.creationType ? 'v2' : 'v1' },
     {
       label: 'Tracking Plan',
-      value: <Link url={toTrackingPlanURL(trackingPlan.name)}>{trackingPlan.display_name}</Link>,
+      value: <Link url={toTrackingPlanURL(trackingPlan)}>{getTrackingPlanName(trackingPlan)}</Link>,
     },
   ];
 

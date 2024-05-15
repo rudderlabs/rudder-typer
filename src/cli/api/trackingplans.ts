@@ -3,7 +3,7 @@ import { TrackingPlanConfig, resolveRelativePath, verifyDirectoryExists } from '
 import sortKeys from 'sort-keys';
 import * as fs from 'fs';
 import { promisify } from 'util';
-import { flow } from 'lodash';
+import { flow, pickBy } from 'lodash';
 import stringify from 'json-stable-stringify';
 
 const writeFile = promisify(fs.writeFile);
@@ -55,7 +55,8 @@ export async function writeTrackingPlan(
 export function sanitizeTrackingPlan(plan: RudderAPI.TrackingPlan): RudderAPI.TrackingPlan {
   // TODO: on JSON Schema Draft-04, required fields must have at least one element.
   // Therefore, we strip `required: []` from your rules so this error isn't surfaced.
-  return sortKeys(plan, { deep: true });
+  const cleanupPlan = pickBy(plan, v => v !== null);
+  return sortKeys(cleanupPlan, { deep: true });
 }
 
 export type TrackingPlanDeltas = {
@@ -107,7 +108,9 @@ export function computeDelta(
   return deltas;
 }
 
-export function parseTrackingPlanName(name: string): { id: string; workspaceSlug: string } {
+export function parseTrackingPlanName(
+  name: string,
+): { id: string; workspaceSlug: string; APIVersion: string } {
   const parts = name.split('/');
 
   // Sane fallback:
@@ -121,15 +124,31 @@ export function parseTrackingPlanName(name: string): { id: string; workspaceSlug
   return {
     id,
     workspaceSlug,
+    APIVersion: 'v1',
   };
 }
 
-export function toTrackingPlanURL(name: string): string {
-  const { id } = parseTrackingPlanName(name);
-  return `https://api.rudderstack.com/trackingplans/${id}`;
+export function toTrackingPlanURL(trackingPlan: RudderAPI.TrackingPlan): string {
+  if (!trackingPlan.creationType) {
+    const { id } = parseTrackingPlanName(trackingPlan.name);
+    return `https://api.rudderstack.com/trackingplans/${id}`;
+  }
+  return `https://api.rudderstack.com/tracking-plans/${trackingPlan.id}`;
 }
 
-export function toTrackingPlanId(name: string): string {
-  const { id } = parseTrackingPlanName(name);
-  return id;
+export function toTrackingPlanId(trackingPlan: RudderAPI.TrackingPlan): string {
+  if (!trackingPlan.creationType) {
+    const { id } = parseTrackingPlanName(trackingPlan.name);
+    return id;
+  }
+  return trackingPlan.id;
+}
+
+export function getTrackingPlanName(trackingPlan: RudderAPI.TrackingPlan): string {
+  // throw new Error(`Unable to parse Tracking Plan name: ${JSON.stringify(trackingPlan)}`);
+  if (!trackingPlan.creationType) {
+    return trackingPlan.display_name;
+  }
+
+  return trackingPlan.name;
 }
