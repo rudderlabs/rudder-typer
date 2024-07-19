@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Box, Text, useApp } from 'ink';
 import Spinner from 'ink-spinner';
-import { listTokens, ListTokensOutput, getTokenMethod, TokenMetadata } from '../config';
-import { StandardProps } from '../index';
-import { ErrorContext } from './error';
+import { listTokens, ListTokensOutput, getTokenMethod, TokenMetadata } from '../config/index.js';
+import { StandardProps } from '../index.js';
+import { ErrorContext } from './error.js';
 
 export const Token: React.FC<StandardProps> = props => {
   const [isLoading, setIsLoading] = useState(true);
@@ -53,11 +53,15 @@ const TokenRow: React.FC<TokenRowProps> = ({ tokenMetadata, method, name }) => {
   return (
     <Box flexDirection="row">
       <Text color={isSelected ? 'green' : 'grey'}>
-        <Box width={20}>{name}:</Box>
+        <Box width={20}>
+          <Text>{name}:</Text>
+        </Box>
         <Box width={15}>
-          {tokenMetadata && tokenMetadata.token
-            ? `${tokenMetadata.token.slice(0, 10)}...`
-            : '(None)'}
+          <Text>
+            {tokenMetadata && tokenMetadata.token
+              ? `${tokenMetadata.token.slice(0, 10)}...`
+              : '(None)'}
+          </Text>
         </Box>
         {tokenMetadata && !!tokenMetadata.token && !tokenMetadata.isValidToken ? (
           <Box width={10}>
@@ -65,7 +69,9 @@ const TokenRow: React.FC<TokenRowProps> = ({ tokenMetadata, method, name }) => {
           </Box>
         ) : (
           <Box width={10}>
-            {tokenMetadata && tokenMetadata.workspace ? tokenMetadata.workspace.name : ''}
+            <Text>
+              {tokenMetadata && tokenMetadata.workspace ? tokenMetadata.workspace.name : ''}
+            </Text>
           </Box>
         )}
       </Text>

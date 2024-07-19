@@ -1,6 +1,6 @@
 import * as childProcess from 'child_process';
 import { promisify } from 'util';
-import { wrapError } from '../commands/error';
+import { wrapError } from '../commands/error.js';
 
 const exec = promisify(childProcess.exec);
 

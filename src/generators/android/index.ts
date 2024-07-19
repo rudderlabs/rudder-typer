@@ -1,1 +1,1 @@
-export { android } from './android';
+export { android } from './android.js';

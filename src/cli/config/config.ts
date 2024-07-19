@@ -1,14 +1,14 @@
 import * as fs from 'fs';
 import { promisify } from 'util';
 import { resolve, dirname } from 'path';
-import * as yaml from 'js-yaml';
-import { generateFromTemplate } from '../../templates';
+import yaml from 'js-yaml';
+import { generateFromTemplate } from '../../templates.js';
 import { homedir } from 'os';
-import { Config, validateConfig } from './schema';
-import { validateToken, RudderAPI } from '../api';
-import { wrapError } from '../commands/error';
-import { runScript, Scripts } from './scripts';
-import { APIError } from '../types';
+import { Config, validateConfig } from './schema.js';
+import { validateToken, RudderAPI } from '../api/index.js';
+import { wrapError } from '../commands/error.js';
+import { runScript, Scripts } from './scripts.js';
+import { APIError } from '../types.js';
 
 const readFile = promisify(fs.readFile);
 const writeFile = promisify(fs.writeFile);

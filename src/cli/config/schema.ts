@@ -1,4 +1,4 @@
-import { Options } from 'src/generators/options';
+import { Options } from 'src/generators/options.js';
 import Joi from '@hapi/joi';
 
 /**

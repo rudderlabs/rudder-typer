@@ -1,6 +1,6 @@
-import { camelCase, upperFirst } from 'lodash';
-import { Type, Schema, getPropertiesSchema } from '../ast';
-import { Generator, GeneratorClient } from '../gen';
+import { camelCase, upperFirst } from 'lodash-es';
+import { Type, Schema, getPropertiesSchema } from '../ast.js';
+import { Generator, GeneratorClient } from '../gen.js';
 
 // These contexts are what will be passed to Handlebars to perform rendering.
 // Everything in these contexts should be properly sanitized.

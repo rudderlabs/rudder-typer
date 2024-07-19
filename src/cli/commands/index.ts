@@ -1,6 +1,6 @@
-export { Token } from './token';
-export { Version } from './version';
-export { Build } from './build';
-export { Help } from './help';
-export { Init } from './init';
-export { ErrorBoundary, wrapError } from './error';
+export { Token } from './token.js';
+export { Version } from './version.js';
+export { Build } from './build.js';
+export { Help } from './help.js';
+export { Init } from './init.js';
+export { ErrorBoundary, wrapError } from './error.js';

@@ -1,14 +1,14 @@
 import { JSONSchema7 } from 'json-schema';
-import { parse, Schema, getPropertiesSchema, Type } from './ast';
-import { javascript } from './javascript';
-import { objc } from './objc';
-import { swift } from './swift';
-import { android } from './android';
-import { Options, SDK, Language } from './options';
-import { registerStandardHelpers, generateFromTemplate } from '../templates';
-import { Namer, Options as NamerOptions } from './namer';
+import { parse, Schema, getPropertiesSchema, Type } from './ast.js';
+import { javascript } from './javascript/index.js';
+import { objc } from './objc/index.js';
+import { swift } from './swift/index.js';
+import { android } from './android/index.js';
+import { Options, SDK, Language } from './options.js';
+import { registerStandardHelpers, generateFromTemplate } from '../templates.js';
+import { Namer, Options as NamerOptions } from './namer.js';
 import stringify from 'json-stable-stringify';
-import { camelCase, upperFirst } from 'lodash';
+import { camelCase, upperFirst } from 'lodash-es';
 
 export type File = {
   path: string;

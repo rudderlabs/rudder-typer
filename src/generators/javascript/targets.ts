@@ -1,8 +1,9 @@
 // Helpers for mapping ruddertyper configuration options for module/script
 // targets to TypeScript's compiler enums.
-import { ModuleKind, ScriptTarget } from 'typescript';
+import ts from 'typescript';
 
-export function toTarget(target: string | undefined): ScriptTarget {
+const { ScriptTarget, ModuleKind } = ts;
+export function toTarget(target: string | undefined): ts.ScriptTarget {
   if (!target) {
     return ScriptTarget.ESNext;
   }
@@ -31,7 +32,7 @@ export function toTarget(target: string | undefined): ScriptTarget {
   }
 }
 
-export function toModule(target: string | undefined): ModuleKind {
+export function toModule(target: string | undefined): ts.ModuleKind {
   if (!target) {
     return ModuleKind.ESNext;
   }

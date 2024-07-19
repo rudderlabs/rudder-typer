@@ -1,29 +1,34 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Text, Box, useApp } from 'ink';
 import Link from 'ink-link';
-import SelectInput, { Item } from 'ink-select-input';
+import SelectInput from 'ink-select-input';
 import TextInput from 'ink-text-input';
 import Spinner from 'ink-spinner';
-import { Config, listTokens, getTokenMethod, setConfig, storeToken } from '../config';
+import { Config, listTokens, getTokenMethod, setConfig, storeToken } from '../config/index.js';
 import {
   validateToken,
   RudderAPI,
   fetchTrackingPlans,
   toTrackingPlanURL,
   parseTrackingPlanName,
-} from '../api';
-import { SDK, Language, Options, JavaScriptOptions } from '../../generators/options';
+} from '../api/index.js';
+import { SDK, Language, Options, JavaScriptOptions } from '../../generators/options.js';
 import figures from 'figures';
 import * as fs from 'fs';
 import { promisify } from 'util';
 import { join, normalize } from 'path';
-import { orderBy } from 'lodash';
-import { Build } from './build';
+import { orderBy } from 'lodash-es';
+import { Build } from './build.js';
 import Fuse from 'fuse.js';
-import { StandardProps, DebugContext } from '../index';
-import { ErrorContext, WrappedError, wrapError } from './error';
-import { APIError } from '../types';
-import { getTrackingPlanName } from '../api/trackingplans';
+import { StandardProps, DebugContext } from '../index.js';
+import { ErrorContext, WrappedError, wrapError } from './error.js';
+import { APIError } from '../types.js';
+import { getTrackingPlanName } from '../api/trackingplans.js';
+
+type Item = {
+  label: string;
+  value: string;
+};
 
 const readir = promisify(fs.readdir);
 
@@ -156,12 +161,12 @@ export const Init: React.FC<InitProps> = props => {
 const Header: React.FC = () => {
   return (
     <Box flexDirection="column">
-      <Box width={80} textWrap="wrap" marginBottom={4}>
+      <Box width={80} marginBottom={4}>
         <Text color="white">
           RudderTyper is a tool for generating strongly-typed{' '}
           <Link url="https://rudderstack.com">RudderStack</Link> analytics libraries from a Tracking
-          Plan
-        </Text>{' '}
+          Plan{' '}
+        </Text>
         <Text color="grey">
           . To get started, {"you'll"} need a <Text color="yellow">ruddertyper.yml</Text>. The
           quickstart below will walk you through creating one.
@@ -327,7 +332,7 @@ async function filterDirectories(path: string): Promise<string[]> {
     [...directories].map(d => ({ name: d })),
     { keys: ['name'] },
   );
-  return isPathEmpty ? [...directories] : fuse.search(path).map(d => d.name);
+  return isPathEmpty ? [...directories] : fuse.search(path).map((d: any) => d.name);
 }
 
 /** A prompt to identify where to store the new client on the user's filesystem. */
@@ -373,7 +378,7 @@ const PathPrompt: React.FC<PathPromptProps> = ({ step, path: initialPath, onSubm
   return (
     <Step name="Enter a directory:" step={step} tips={tips}>
       <Box>
-        <Text>{figures.pointer}</Text>{' '}
+        <Text>{figures.pointer} </Text>
         <TextInput value={path} showCursor={true} onChange={setPath} onSubmit={onSubmitPath} />
       </Box>
       <Box height={10} marginLeft={2} flexDirection="column">
@@ -559,7 +564,7 @@ const APITokenPrompt: React.FC<APITokenPromptProps> = ({ step, config, configPat
         {state.canBeSet && !state.foundCachedToken && (
           <Box flexDirection="column">
             <Box>
-              <Text>{figures.pointer}</Text>{' '}
+              <Text>{figures.pointer} </Text>
               <TextInput
                 value={state.token}
                 // See: https://github.com/vadimdemedes/ink-text-input/issues/41
@@ -571,7 +576,7 @@ const APITokenPrompt: React.FC<APITokenPromptProps> = ({ step, config, configPat
               />
             </Box>
             {state.isInvalid && (
-              <Box textWrap="wrap" marginLeft={2}>
+              <Box marginLeft={2}>
                 <Text color="red">{figures.cross} Invalid Rudder API token.</Text>
               </Box>
             )}
@@ -582,7 +587,7 @@ const APITokenPrompt: React.FC<APITokenPromptProps> = ({ step, config, configPat
         <Step name="Enter your Email Id" isLoading={state.isLoading}>
           <Box flexDirection="column">
             <Box>
-              <Text>{figures.pointer}</Text>{' '}
+              <Text>{figures.pointer} </Text>
               <TextInput
                 value={state.email}
                 onChange={setEmail}

@@ -2,8 +2,8 @@ import React, { createContext, useEffect } from 'react';
 import { Box, Text, useApp } from 'ink';
 import Link from 'ink-link';
 import figures from 'figures';
-import { version } from '../../../package.json';
-import { AnalyticsProps } from '../index';
+import packageJson from '../../../package.json' assert { type: 'json' };
+import { AnalyticsProps } from '../index.js';
 
 type ErrorContextProps = {
   /** Called to indicate that a non-fatal error has occurred. This will be printed only in debug mode. */
@@ -72,10 +72,12 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   public state: ErrorBoundaryState = {};
 
   public static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
+    
     return { error: toUnexpectedError(error) };
   }
 
   public componentDidCatch(error: Error): void {
+
     this.reportError({
       error: toUnexpectedError(error),
       fatal: true,
@@ -84,6 +86,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   public componentDidMount(): void {
     if (this.props.error) {
+      
       const err = toUnexpectedError(this.props.error);
       this.reportError({
         error: err,
@@ -129,7 +132,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       <ErrorContext.Provider value={context}>
         <Box flexDirection="column">
           {error && <ErrorComponent error={error} />}
-          {!error && children}
+          {!error && <Text>children</Text>}
         </Box>
       </ErrorContext.Provider>
     );
@@ -149,7 +152,7 @@ const ErrorComponent: React.FC<ErrorComponentProps> = ({ error }) => {
 
   return (
     <Box flexDirection="column" marginLeft={2} marginRight={2} marginTop={1} marginBottom={1}>
-      <Box width={80} textWrap="wrap">
+      <Box width={80} >
         <Text color="red">
           {figures.cross} Error: {error.description}
         </Text>
@@ -160,18 +163,18 @@ const ErrorComponent: React.FC<ErrorComponentProps> = ({ error }) => {
             <Box marginLeft={1} marginRight={1}>
               <Text color="grey">{figures.arrowRight}</Text>
             </Box>
-            <Box width={80} textWrap="wrap">
+            <Box width={80} >
               <Text color="grey">{n}</Text>
             </Box>
           </Box>
         ))}
-      <Box height={2} width={80} textWrap="wrap" marginTop={1}>
+      <Box height={2} width={80}  marginTop={1}>
         <Text color="grey">
           If you are unable to resolve this issue,{' '}
           <Link url="https://github.com/rudderlabs/rudder-typer/issues/new">
             open an issue on GitHub
           </Link>
-          . Please include that you are using version <Text color="yellow">{version}</Text> of
+          . Please include that you are using version <Text color="yellow">{packageJson.version}</Text> of
           RudderTyper.
         </Text>
       </Box>

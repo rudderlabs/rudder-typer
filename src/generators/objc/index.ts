@@ -1,1 +1,1 @@
-export { objc } from './objc';
+export { objc } from './objc.js';

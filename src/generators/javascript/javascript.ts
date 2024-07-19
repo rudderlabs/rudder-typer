@@ -1,11 +1,11 @@
-import { Type, Schema } from '../ast';
-import { camelCase, upperFirst } from 'lodash';
+import { Type, Schema } from '../ast.js';
+import { camelCase, upperFirst } from 'lodash-es';
 import * as prettier from 'prettier';
-import { transpileModule } from 'typescript';
-import { Language, SDK } from '../options';
-import { Generator } from '../gen';
-import { toTarget, toModule } from './targets';
-import { registerPartial } from '../../templates';
+import ts from 'typescript';
+import { Language, SDK } from '../options.js';
+import { Generator } from '../gen.js';
+import { toTarget, toModule } from './targets.js';
+import { registerPartial } from '../../templates.js';
 
 // These contexts are what will be passed to Handlebars to perform rendering.
 // Everything in these contexts should be properly sanitized.
@@ -157,7 +157,7 @@ export const javascript: Generator<
     // from TypeScript into JavaScript.
     if (client.options.client.language === Language.JAVASCRIPT) {
       // If we're generating a JavaScript client, compile from TypeScript to JavaScript.
-      const { outputText } = transpileModule(contents, {
+      const { outputText } = ts.transpileModule(contents, {
         compilerOptions: {
           target: toTarget(client.options.client.scriptTarget),
           module: toModule(client.options.client.moduleTarget),

@@ -6,13 +6,16 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'production';
 
 import React, { createContext } from 'react';
 import { render } from 'ink';
-import { Token, Version, Build, Help, Init, ErrorBoundary } from './commands';
-import { Config, getConfig, getTokenMethod } from './config';
-import { machineId } from 'node-machine-id';
-import { version } from '../../package.json';
-import { loadTrackingPlan } from './api';
+import { Token, Version, Build, Help, Init, ErrorBoundary } from './commands/index.js';
+import { Config, getConfig, getTokenMethod } from './config/index.js';
+import nodeid from 'node-machine-id';
+import packageJson from '../../package.json' assert { type: 'json' };
+import { loadTrackingPlan } from './api/index.js';
 import yargs from 'yargs';
-import { getTrackingPlanName } from './api/trackingplans';
+import { getTrackingPlanName } from './api/trackingplans.js';
+type AsyncReturnType<T extends (...args: any) => any> = T extends (...args: any) => Promise<infer R>
+  ? R
+  : any;
 
 export type StandardProps = AnalyticsProps & {
   configPath: string;
@@ -167,7 +170,7 @@ function toYargsHandler<P = unknown>(
       try {
         const { waitUntilExit } = render(
           <DebugContext.Provider value={{ debug: args.debug }}>
-            <ErrorBoundary
+             <ErrorBoundary
               anonymousId={anonymousId}
               analyticsProps={analyticsProps}
               debug={args.debug}
@@ -179,8 +182,8 @@ function toYargsHandler<P = unknown>(
                 analyticsProps={analyticsProps}
                 {...props}
               />
-            </ErrorBoundary>
-          </DebugContext.Provider>,
+              </ErrorBoundary>         
+            </DebugContext.Provider>,
           { debug: !!args.debug },
         );
         await waitUntilExit();
@@ -251,7 +254,7 @@ async function rudderTyperLibraryProperties(
   } catch {}
 
   return {
-    version,
+    version:packageJson.version,
     client: cfg && {
       language: cfg.client.language,
       sdk: cfg.client.sdk,
@@ -275,5 +278,5 @@ async function rudderTyperLibraryProperties(
  * the same user together.
  */
 async function getAnonymousId() {
-  return await machineId(false);
+  return await nodeid.machineId(false);
 }

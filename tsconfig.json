@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
-    "target": "es2015",
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "forceConsistentCasingInFileNames": true,
+    "target": "ESNext",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
@@ -14,6 +15,9 @@
     "jsx": "react",
     "skipLibCheck": true,
     "typeRoots": ["./node_modules/@types", "./src/@types"]
+  },
+  "ts-node": {
+    "esm": true
   },
   "include": ["src/**/*"]
 }

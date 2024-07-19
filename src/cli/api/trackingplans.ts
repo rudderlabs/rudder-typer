@@ -1,9 +1,9 @@
-import { RudderAPI } from './api';
-import { TrackingPlanConfig, resolveRelativePath, verifyDirectoryExists } from '../config';
+import { RudderAPI } from './api.js';
+import { TrackingPlanConfig, resolveRelativePath, verifyDirectoryExists } from '../config/index.js';
 import sortKeys from 'sort-keys';
 import * as fs from 'fs';
 import { promisify } from 'util';
-import { flow, pickBy } from 'lodash';
+import { flow, pickBy } from 'lodash-es';
 import stringify from 'json-stable-stringify';
 
 const writeFile = promisify(fs.writeFile);
@@ -56,7 +56,7 @@ export function sanitizeTrackingPlan(plan: RudderAPI.TrackingPlan): RudderAPI.Tr
   // TODO: on JSON Schema Draft-04, required fields must have at least one element.
   // Therefore, we strip `required: []` from your rules so this error isn't surfaced.
   const cleanupPlan = pickBy(plan, v => v !== null);
-  return sortKeys(cleanupPlan, { deep: true });
+  return sortKeys(cleanupPlan, { deep: true }) as RudderAPI.TrackingPlan;
 }
 
 export type TrackingPlanDeltas = {

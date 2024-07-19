@@ -1,1 +1,1 @@
-export { swift } from './swift';
+export { swift } from './swift.js';

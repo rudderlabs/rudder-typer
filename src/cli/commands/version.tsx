@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Box, Text, useApp } from 'ink';
-import { version as ruddertyperVersion } from '../../../package.json';
+import packageJson from '../../../package.json' assert { type: 'json' };
 import latest from 'latest-version';
-import { StandardProps } from '../index';
-import { ErrorContext, WrappedError } from './error';
+import { StandardProps } from '../index.js';
+import { ErrorContext, WrappedError } from './error.js';
 import semver from 'semver';
 
 export const Version: React.FC<StandardProps> = () => {
@@ -19,7 +19,7 @@ export const Version: React.FC<StandardProps> = () => {
 
         // If the user is on a pre-release, check if there's a new pre-release.
         // Otherwise, only compare against stable versions.
-        const prerelease = semver.prerelease(ruddertyperVersion);
+        const prerelease = semver.prerelease(packageJson.version);
         if (prerelease && prerelease.length > 0) {
           options = { version: 'next' };
         }
@@ -37,7 +37,7 @@ export const Version: React.FC<StandardProps> = () => {
     effect();
   }, []);
 
-  const isLatest = isLoading || latestVersion === '' || latestVersion === ruddertyperVersion;
+  const isLatest = isLoading || latestVersion === '' || latestVersion === packageJson.version;
   const newVersionText = isLoading
     ? '(checking for newer versions...)'
     : !isLatest
@@ -47,7 +47,7 @@ export const Version: React.FC<StandardProps> = () => {
   return (
     <Box>
       <Text color="grey">Version: </Text>
-      <Text color={isLatest ? 'green' : 'yellow'}>{ruddertyperVersion} </Text>
+      <Text color={isLatest ? 'green' : 'yellow'}>{packageJson.version} </Text>
       <Text color={isLatest ? 'grey' : 'green'}>{newVersionText}</Text>
     </Box>
   );
