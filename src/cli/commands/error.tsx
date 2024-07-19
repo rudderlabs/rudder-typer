@@ -1,5 +1,5 @@
 import React, { createContext, useEffect } from 'react';
-import { Box, Color, useApp } from 'ink';
+import { Box, Text, useApp } from 'ink';
 import Link from 'ink-link';
 import figures from 'figures';
 import { version } from '../../../package.json';
@@ -150,30 +150,30 @@ const ErrorComponent: React.FC<ErrorComponentProps> = ({ error }) => {
   return (
     <Box flexDirection="column" marginLeft={2} marginRight={2} marginTop={1} marginBottom={1}>
       <Box width={80} textWrap="wrap">
-        <Color red>
+        <Text color="red">
           {figures.cross} Error: {error.description}
-        </Color>
+        </Text>
       </Box>
       {error.notes &&
         error.notes.map(n => (
           <Box key={n}>
             <Box marginLeft={1} marginRight={1}>
-              <Color grey>{figures.arrowRight}</Color>
+              <Text color="grey">{figures.arrowRight}</Text>
             </Box>
             <Box width={80} textWrap="wrap">
-              <Color grey>{n}</Color>
+              <Text color="grey">{n}</Text>
             </Box>
           </Box>
         ))}
       <Box height={2} width={80} textWrap="wrap" marginTop={1}>
-        <Color grey>
+        <Text color="grey">
           If you are unable to resolve this issue,{' '}
           <Link url="https://github.com/rudderlabs/rudder-typer/issues/new">
             open an issue on GitHub
           </Link>
-          . Please include that you are using version <Color yellow>{version}</Color> of
+          . Please include that you are using version <Text color="yellow">{version}</Text> of
           RudderTyper.
-        </Color>
+        </Text>
       </Box>
     </Box>
   );

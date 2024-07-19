@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Text, Box, Color, useApp } from 'ink';
+import { Text, Box, useApp } from 'ink';
 import Link from 'ink-link';
 import SelectInput, { Item } from 'ink-select-input';
 import TextInput from 'ink-text-input';
@@ -157,15 +157,15 @@ const Header: React.FC = () => {
   return (
     <Box flexDirection="column">
       <Box width={80} textWrap="wrap" marginBottom={4}>
-        <Color white>
+        <Text color="white">
           RudderTyper is a tool for generating strongly-typed{' '}
           <Link url="https://rudderstack.com">RudderStack</Link> analytics libraries from a Tracking
           Plan
-        </Color>{' '}
-        <Color grey>
-          . To get started, {"you'll"} need a <Color yellow>ruddertyper.yml</Color>. The quickstart
-          below will walk you through creating one.
-        </Color>
+        </Text>{' '}
+        <Text color="grey">
+          . To get started, {"you'll"} need a <Text color="yellow">ruddertyper.yml</Text>. The
+          quickstart below will walk you through creating one.
+        </Text>
       </Box>
     </Box>
   );
@@ -364,7 +364,7 @@ const PathPrompt: React.FC<PathPromptProps> = ({ step, path: initialPath, onSubm
   const directoryRows: (string | JSX.Element)[] = isNewDirectory
     ? [
         <Text key="new-directory">
-          {path} <Color blue>(new)</Color>
+          {path} <Text color="blue">(new)</Text>
         </Text>,
       ]
     : [];
@@ -378,9 +378,9 @@ const PathPrompt: React.FC<PathPromptProps> = ({ step, path: initialPath, onSubm
       </Box>
       <Box height={10} marginLeft={2} flexDirection="column">
         {directoryRows.map((d, i) => (
-          <Color key={i} grey>
+          <Text key={i} color="grey">
             {d}
-          </Color>
+          </Text>
         ))}
       </Box>
     </Step>
@@ -529,9 +529,9 @@ const APITokenPrompt: React.FC<APITokenPromptProps> = ({ step, config, configPat
 
   if (state.foundCachedToken) {
     tips.push(
-      <Color yellow>
+      <Text color="yellow">
         A cached token for {state.workspace!.name} is already in your environment.
-      </Color>,
+      </Text>,
     );
   }
 
@@ -572,7 +572,7 @@ const APITokenPrompt: React.FC<APITokenPromptProps> = ({ step, config, configPat
             </Box>
             {state.isInvalid && (
               <Box textWrap="wrap" marginLeft={2}>
-                <Color red>{figures.cross} Invalid Rudder API token.</Color>
+                <Text color="red">{figures.cross} Invalid Rudder API token.</Text>
               </Box>
             )}
           </Box>
@@ -672,7 +672,7 @@ const TrackingPlanPrompt: React.FC<TrackingPlanPromptProps> = ({
   const tips = [
     'RudderTyper will generate a client from this Tracking Plan.',
     <Text key="plan-path">
-      This Tracking Plan is saved locally in a <Color yellow>plan.json</Color> file.
+      This Tracking Plan is saved locally in a <Text color="yellow">plan.json</Text> file.
     </Text>,
   ];
 
@@ -789,9 +789,9 @@ const SummaryPrompt: React.FC<SummaryPromptProps> = ({
       {summaryRows.map(r => (
         <Box key={r.label}>
           <Box width={20}>
-            <Color grey>{r.label}:</Color>
+            <Text color="grey">{r.label}:</Text>
           </Box>
-          <Color yellow>{r.value}</Color>
+          <Text color="yellow">{r.value}</Text>
         </Box>
       ))}
     </Box>
@@ -832,32 +832,32 @@ const Step: React.FC<StepProps> = ({
     <Box flexDirection="column">
       <Box flexDirection="row" width={80} justifyContent="space-between">
         <Box>
-          <Color white>{name}</Color>
+          <Text color="white">{name}</Text>
         </Box>
         {step && (
           <Box>
-            <Color yellow>[{step}/6]</Color>
+            <Text color="yellow">[{step}/6]</Text>
           </Box>
         )}
       </Box>
       <Box marginLeft={1} flexDirection="column">
         {tips &&
           tips.map((t, i) => (
-            <Color grey key={i}>
+            <Text color="grey" key={i}>
               {figures.arrowRight} {t}
-            </Color>
+            </Text>
           ))}
         {description}
         <Box marginTop={1} flexDirection="column">
           {isLoading && (
-            <Color grey>
+            <Text color="grey">
               {!debug && (
                 <>
                   <Spinner type="dots" />{' '}
                 </>
               )}
               Loading...
-            </Color>
+            </Text>
           )}
           {!isLoading && children}
         </Box>

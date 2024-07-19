@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Box, Text, Color, useApp } from 'ink';
+import { Box, Text, useApp } from 'ink';
 import Link from 'ink-link';
 import Spinner from 'ink-spinner';
 import {
@@ -241,19 +241,11 @@ export const UpdatePlanStep: React.FC<UpdatePlanStepProps> = ({
             Loaded <Link url={trackingPlan.url}>{trackingPlan.name}</Link>{' '}
             {(deltas.added !== 0 || deltas.modified !== 0 || deltas.removed !== 0) && (
               <>
-                (
-                <Color grey={deltas.added === 0} green={deltas.added > 0}>
-                  {deltas.added} added
-                </Color>
-                ,{' '}
-                <Color grey={deltas.modified === 0} yellow={deltas.modified > 0}>
+                (<Text color={deltas.added > 0 ? 'green' : 'grey'}>{deltas.added} added</Text>,{' '}
+                <Text color={deltas.modified > 0 ? 'yellow' : 'grey'}>
                   {deltas.modified} modified
-                </Color>
-                ,{' '}
-                <Color grey={deltas.removed === 0} red={deltas.removed > 0}>
-                  {deltas.removed} removed
-                </Color>
-                )
+                </Text>
+                , <Text color={deltas.removed > 0 ? 'red' : 'grey'}>{deltas.removed} removed</Text>)
               </>
             )}
           </Note>
@@ -482,11 +474,11 @@ const Step: React.FC<StepProps> = ({ name, isSkipped, isRunning, isDone, childre
 
   return (
     <Box flexDirection="column">
-      <Color white>
+      <Text color="white">
         <Box width={3} justifyContent="flex-end">
           {/* In debug mode, skip the Spinner to reduce noise */}
           {isDone ? (
-            <Color green> ✔</Color>
+            <Text color="green"> ✔</Text>
           ) : isRunning ? (
             debug ? (
               figures.ellipsis
@@ -500,7 +492,7 @@ const Step: React.FC<StepProps> = ({ name, isSkipped, isRunning, isDone, childre
         <Box marginLeft={1} width={70}>
           {name}
         </Box>
-      </Color>
+      </Text>
       {(isRunning || isDone) && children}
     </Box>
   );
@@ -513,12 +505,12 @@ type NoteProps = {
 const Note: React.FC<NoteProps> = ({ isWarning, children }) => {
   return (
     <Text italic>
-      <Color grey={!isWarning} yellow={!!isWarning}>
+      <Text color={!isWarning ? 'grey' : 'yellow'}>
         <Box marginLeft={4}>{isWarning ? '⚠' : '↪'}</Box>
         <Box marginLeft={2} width={80} textWrap="wrap">
           {children}
         </Box>
-      </Color>
+      </Text>
     </Text>
   );
 };
