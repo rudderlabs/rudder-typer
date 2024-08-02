@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Box, Color, useApp } from 'ink';
+import { Box, Text, useApp } from 'ink';
 import { version as ruddertyperVersion } from '../../../package.json';
 import latest from 'latest-version';
 import { StandardProps } from '../index';
@@ -46,13 +46,9 @@ export const Version: React.FC<StandardProps> = () => {
 
   return (
     <Box>
-      <Color grey>Version: </Color>
-      <Color green={isLatest} yellow={!isLatest}>
-        {ruddertyperVersion}{' '}
-      </Color>
-      <Color grey={isLatest} green={!isLatest}>
-        {newVersionText}
-      </Color>
+      <Text color="grey">Version: </Text>
+      <Text color={isLatest ? 'green' : 'yellow'}>{ruddertyperVersion} </Text>
+      <Text color={isLatest ? 'grey' : 'green'}>{newVersionText}</Text>
     </Box>
   );
 };

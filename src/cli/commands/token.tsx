@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Box, Color, Text, useApp } from 'ink';
-import Link from 'ink-link';
+import { Box, Text, useApp } from 'ink';
 import Spinner from 'ink-spinner';
 import { listTokens, ListTokensOutput, getTokenMethod, TokenMetadata } from '../config';
 import { StandardProps } from '../index';
@@ -27,7 +26,7 @@ export const Token: React.FC<StandardProps> = props => {
   if (isLoading) {
     return (
       <Box marginLeft={2} marginTop={1} marginBottom={1}>
-        <Spinner type="dots" /> <Color grey>Loading...</Color>
+        <Spinner type="dots" /> <Text color="grey">Loading...</Text>
       </Box>
     );
   }
@@ -53,23 +52,29 @@ const TokenRow: React.FC<TokenRowProps> = ({ tokenMetadata, method, name }) => {
 
   return (
     <Box flexDirection="row">
-      <Color green={isSelected} grey={!isSelected}>
-        <Box width={20}>{name}:</Box>
+      <Text color={isSelected ? 'green' : 'grey'}>
+        <Box width={20}>
+          <Text>{name}:</Text>
+        </Box>
         <Box width={15}>
-          {tokenMetadata && tokenMetadata.token
-            ? `${tokenMetadata.token.slice(0, 10)}...`
-            : '(None)'}
+          <Text>
+            {tokenMetadata && tokenMetadata.token
+              ? `${tokenMetadata.token.slice(0, 10)}...`
+              : '(None)'}
+          </Text>
         </Box>
         {tokenMetadata && !!tokenMetadata.token && !tokenMetadata.isValidToken ? (
           <Box width={10}>
-            <Color red={true}>(invalid token)</Color>
+            <Text color="red">(invalid token)</Text>
           </Box>
         ) : (
           <Box width={10}>
-            {tokenMetadata && tokenMetadata.workspace ? tokenMetadata.workspace.name : ''}
+            {tokenMetadata && tokenMetadata.workspace ? (
+              <Text>tokenMetadata.workspace.name</Text>
+            ) : null}
           </Box>
         )}
-      </Color>
+      </Text>
     </Box>
   );
 };
