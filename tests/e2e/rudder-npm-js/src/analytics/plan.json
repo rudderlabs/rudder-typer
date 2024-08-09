@@ -1,0 +1,35 @@
+{
+  "createdAt": "2024-08-07T10:13:39.371Z",
+  "creationType": "Data catalog",
+  "description": "Sample tracking plan 1",
+  "id": "tp_2kKI0i514th5OEuYi5AdsRwNlXC",
+  "name": "Sample tracking plan 1",
+  "rules": {
+    "events": [
+      {
+        "description": "Sample event 1",
+        "name": "Sample event 1",
+        "rules": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "description": "Sample event 1",
+          "properties": {
+            "properties": {
+              "additionalProperties": false,
+              "properties": {
+                "Sample property 1": {
+                  "description": "Sample property 1"
+                }
+              },
+              "required": [],
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      }
+    ]
+  },
+  "updatedAt": "2024-08-07T10:13:40.488Z",
+  "version": 2,
+  "workspaceId": "sample-workspace-id"
+}

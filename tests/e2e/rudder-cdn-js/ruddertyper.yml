@@ -1,0 +1,14 @@
+# RudderStack RudderTyper Configuration
+# Just run `npx rudder-typer@next` to re-generate a client with the latest versions of these events.
+
+client:
+  sdk: analytics.js
+  language: typescript
+
+trackingPlans:
+  # Tracking Plan: Sample tracking plan 1
+  # https://app.rudderstack.com/trackingplans/tp_2kKI0i514th5OEuYi5AdsRwNlXC
+  - id: tp_2kKI0i514th5OEuYi5AdsRwNlXC
+    workspaceSlug: sample-workspace-id
+    path: src/analytics
+    APIVersion: v2
