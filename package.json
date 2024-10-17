@@ -31,7 +31,8 @@
     "release:ci": "cd dist && npm publish --access public",
     "pre-commit": "npm run build && lint-staged",
     "prepare": "husky",
-    "release": "npx standard-version"
+    "release": "npx standard-version",
+    "release:github": "npx conventional-github-releaser -p angular"
   },
   "devDependencies": {
     "@types/jest": "29.5.12",

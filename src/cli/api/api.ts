@@ -4,6 +4,7 @@ import { wrapError, isWrappedError } from '../commands/error.js';
 import { sanitizeTrackingPlan } from './trackingplans.js';
 import lodash from 'lodash';
 import { APIError } from '../types.js';
+import { EventType } from 'src/generators/gen.js';
 
 const { set } = lodash;
 
@@ -15,6 +16,7 @@ export namespace RudderAPI {
   export type GetTrackingPlanEventsRulesResponse = {
     name: string;
     description?: string;
+    eventType: EventType;
     rules: JSONSchema7;
   };
 
@@ -65,6 +67,7 @@ export namespace RudderAPI {
   export type RuleMetadata = {
     name: string;
     description?: string;
+    eventType: EventType;
     rules: JSONSchema7;
   };
 
@@ -110,21 +113,20 @@ export async function fetchTrackingPlan(options: {
       options.email,
     );
     if (eventsResponse) {
-      const eventsRulesResponsePromise = eventsResponse.data
-        .filter((ev) => ev.eventType === 'track')
-        .map(async (ev) => {
-          const url = `tracking-plans/${options.id}/events/${ev.id}`;
-          const eventsRulesResponse = await apiGet<RudderAPI.GetTrackingPlanEventsRulesResponse>(
-            url,
-            options.token,
-            options.email,
-          );
-          return {
-            name: eventsRulesResponse.name,
-            description: eventsRulesResponse.description,
-            rules: eventsRulesResponse.rules,
-          };
-        });
+      const eventsRulesResponsePromise = eventsResponse.data.map(async (ev) => {
+        const url = `tracking-plans/${options.id}/events/${ev.id}`;
+        const eventsRulesResponse = await apiGet<RudderAPI.GetTrackingPlanEventsRulesResponse>(
+          url,
+          options.token,
+          options.email,
+        );
+        return {
+          name: eventsRulesResponse.name,
+          description: eventsRulesResponse.description,
+          eventType: eventsRulesResponse.eventType,
+          rules: eventsRulesResponse.rules,
+        };
+      });
       const eventsRulesResponse: RudderAPI.RuleMetadata[] = await Promise.all(
         eventsRulesResponsePromise,
       );

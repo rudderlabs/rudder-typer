@@ -209,11 +209,41 @@ export const UpdatePlanStep: React.FC<UpdatePlanStepProps> = ({
         id: toTrackingPlanId(newTrackingPlan),
         version: newTrackingPlan.version,
         path: trackingPlanConfig.path,
-        trackCalls: events.map<JSONSchema7>((e) => ({
-          ...e.rules,
-          title: e.name,
-          description: e.description,
-        })),
+        trackCalls: events
+          .filter((e) => e.eventType === 'track')
+          .map<JSONSchema7>((e) => ({
+            ...e.rules,
+            title: e.name,
+            description: e.description,
+          })),
+        screenCalls: events
+          .filter((e) => e.eventType === 'screen')
+          .map<JSONSchema7>((e) => ({
+            ...e.rules,
+            title: 'screen',
+            description: e.description,
+          })),
+        pageCalls: events
+          .filter((e) => e.eventType === 'page')
+          .map<JSONSchema7>((e) => ({
+            ...e.rules,
+            title: 'page',
+            description: e.description,
+          })),
+        identifyCalls: events
+          .filter((e) => e.eventType === 'identify')
+          .map<JSONSchema7>((e) => ({
+            ...e.rules,
+            title: 'identify',
+            description: e.description,
+          })),
+        groupCalls: events
+          .filter((e) => e.eventType === 'group')
+          .map<JSONSchema7>((e) => ({
+            ...e.rules,
+            title: 'group',
+            description: e.description,
+          })),
       };
 
       loadedTrackingPlans.push({

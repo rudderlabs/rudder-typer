@@ -127,6 +127,31 @@ export function getPropertiesSchema(event: Schema): ObjectTypeSchema {
   };
 }
 
+// get traits from the event schema
+export function getTraitsSchema(event: Schema): ObjectTypeSchema {
+  let traits: ObjectTypeSchema | undefined = undefined;
+
+  if (event.type === Type.OBJECT) {
+    const traitsSchema = event.properties.find(
+      (schema: Schema): boolean => schema.name === 'traits',
+    );
+
+    if (traitsSchema && traitsSchema.type === Type.OBJECT) {
+      traits = traitsSchema;
+    }
+  }
+
+  return {
+    type: Type.OBJECT,
+    properties: [],
+    ...(traits || {}),
+    isRequired: traits ? !!traits.isRequired : false,
+    isNullable: false,
+    name: event.name,
+    description: event.description,
+  };
+}
+
 // parse transforms a JSON Schema into a standardized Schema.
 export function parse(raw: JSONSchema7, name?: string, isRequired?: boolean): Schema {
   // TODO: validate that the raw JSON Schema is a valid JSON Schema before attempting to parse it.

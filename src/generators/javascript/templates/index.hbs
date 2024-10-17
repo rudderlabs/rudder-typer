@@ -327,11 +327,147 @@ export function {{functionName}}(
 {{/if}}
 {{/each}}
 
+{{#each page}}
+{{> functionDocumentation isBrowser=../isBrowser }}
+{{#if ../isBrowser}}
+export function {{functionName}}
+(
+	props{{#if isPropertiesOptional}}?{{/if}}: {{propertiesType}},
+	options?: ApiOptions,
+	callback?: apiCallback
+): void {
+	const a = analytics()
+	{{#if ../isDevelopment}}
+	const schema = {{rawJSONSchema}}
+	const message = {
+		properties: props || {},
+		options,
+	}
+	validateAgainstSchema(message, schema).then(()=>{
+		if (a) {
+			a.page(
+				props || {},
+				withRudderTyperContext(options),
+				callback
+			)
+		}
+	})
+	{{else}}
+	if (a) {
+		a.page(
+			props || {},
+			withRudderTyperContext(options),
+			callback
+		)
+	}
+	{{/if}}
+}
+{{else}}
+{{!-- TODO for Node--}}
+{{/if}}
+{{/each}}
+
+{{#each identify}}
+{{> functionDocumentation isBrowser=../isBrowser }}
+{{#if ../isBrowser}}
+export function {{functionName}}
+(
+	props{{#if isPropertiesOptional}}?{{/if}}: {{propertiesType}},
+	options?: ApiOptions,
+	callback?: apiCallback
+): void {
+	const a = analytics()
+	{{#if ../isDevelopment}}
+	const schema = {{rawJSONSchema}}
+	const message = {
+		traits: props || {},
+		options,
+	}
+	validateAgainstSchema(message, schema).then(()=>{
+		if (a) {
+			a.identify(
+				props || {},
+				withRudderTyperContext(options),
+				callback
+			)
+		}
+	})
+	{{else}}
+	if (a) {
+		a.identify(
+			props || {},
+			withRudderTyperContext(options),
+			callback
+		)
+	}
+	{{/if}}
+}
+{{else}}
+{{!-- TODO for Node--}}
+{{/if}}
+{{/each}}
+
+{{#each group}}
+{{> functionDocumentation isBrowser=../isBrowser }}
+{{#if ../isBrowser}}
+export function {{functionName}}
+(
+	props{{#if isPropertiesOptional}}?{{/if}}: {{propertiesType}},
+	options?: ApiOptions,
+	callback?: apiCallback
+): void {
+	const a = analytics()
+	{{#if ../isDevelopment}}
+	const schema = {{rawJSONSchema}}
+	const message = {
+		traits: props || {},
+		options,
+	}
+	validateAgainstSchema(message, schema).then(()=>{
+		if (a) {
+			a.group(
+				props || {},
+				withRudderTyperContext(options),
+				callback
+			)
+		}
+	})
+	{{else}}
+	if (a) {
+		a.group(
+			props || {},
+			withRudderTyperContext(options),
+			callback
+		)
+	}
+	{{/if}}
+}
+{{else}}
+{{!-- TODO for Node--}}
+{{/if}}
+{{/each}}
+
 {{#if useProxy}}
 const clientAPI = {
 	{{> setRudderTyperOptionsDocumentation}}
 	setRudderTyperOptions,
 	{{#each tracks}}
+	{{> functionDocumentation isBrowser=../isBrowser }}
+	{{functionName}},
+	{{/each}}
+	{{#each page}}
+	{{> functionDocumentation isBrowser=../isBrowser }}
+	{{functionName}},
+	{{/each}}
+	{{#each screen}}
+	{{> functionDocumentation isBrowser=../isBrowser }}
+	{{functionName}},
+	{{/each}}
+	{{#each identify}}
+	{{> functionDocumentation isBrowser=../isBrowser }}
+	{{functionName}},
+	{{/each}}
+	{{#each group}}
 	{{> functionDocumentation isBrowser=../isBrowser }}
 	{{functionName}},
 	{{/each}}

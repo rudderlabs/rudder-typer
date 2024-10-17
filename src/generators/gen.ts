@@ -1,5 +1,12 @@
 import { JSONSchema7 } from 'json-schema';
-import { parse, Schema, getPropertiesSchema, Type, PrimitiveTypeSchema } from './ast.js';
+import {
+  parse,
+  Schema,
+  getPropertiesSchema,
+  Type,
+  PrimitiveTypeSchema,
+  getTraitsSchema,
+} from './ast.js';
 import { javascript } from './javascript/index.js';
 import { objc } from './objc/index.js';
 import { swift } from './swift/index.js';
@@ -17,6 +24,8 @@ export type File = {
   contents: string;
 };
 
+export type EventType = 'track' | 'identify' | 'group' | 'page' | 'screen';
+
 export type RawTrackingPlan = {
   name: string;
   url: string;
@@ -24,6 +33,10 @@ export type RawTrackingPlan = {
   version: number;
   path: string;
   trackCalls: JSONSchema7[];
+  screenCalls: JSONSchema7[];
+  identifyCalls: JSONSchema7[];
+  groupCalls: JSONSchema7[];
+  pageCalls: JSONSchema7[];
 };
 
 export type TrackingPlan = {
@@ -31,6 +44,22 @@ export type TrackingPlan = {
   id: string;
   version: number;
   trackCalls: {
+    raw: JSONSchema7;
+    schema: Schema;
+  }[];
+  screenCalls: {
+    raw: JSONSchema7;
+    schema: Schema;
+  }[];
+  pageCalls: {
+    raw: JSONSchema7;
+    schema: Schema;
+  }[];
+  identifyCalls: {
+    raw: JSONSchema7;
+    schema: Schema;
+  }[];
+  groupCalls: {
     raw: JSONSchema7;
     schema: Schema;
   }[];
@@ -45,8 +74,22 @@ export type BaseRootContext<
   language: string;
   rudderTyperVersion: string;
   trackingPlanURL: string;
-  tracks: (T & BaseTrackCallContext<P>)[];
   objects: (O & BaseObjectContext<P>)[];
+  tracks: (T & BaseTrackCallContext<P>)[];
+  page: (T & BaseTrackCallContext<P>)[];
+  screen: (T & BaseTrackCallContext<P>)[];
+  identify: (T & {
+    functionDescription?: string;
+    rawJSONSchema: string;
+    rawEventName: string;
+    properties?: (P & BasePropertyContext)[];
+  })[];
+  group: (T & {
+    functionDescription?: string;
+    rawJSONSchema: string;
+    rawEventName: string;
+    properties?: (P & BasePropertyContext)[];
+  })[];
 };
 
 export type BaseTrackCallContext<P extends Record<string, unknown>> = {
@@ -173,6 +216,46 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
         schema: parse(sanitizedSchema),
       };
     }),
+    screenCalls: trackingPlan.screenCalls.map((s) => {
+      const sanitizedSchema = {
+        $schema: 'http://json-schema.org/draft-07/schema#',
+        ...s,
+      };
+      return {
+        raw: sanitizedSchema,
+        schema: parse(sanitizedSchema),
+      };
+    }),
+    pageCalls: trackingPlan.pageCalls.map((s) => {
+      const sanitizedSchema = {
+        $schema: 'http://json-schema.org/draft-07/schema#',
+        ...s,
+      };
+      return {
+        raw: sanitizedSchema,
+        schema: parse(sanitizedSchema),
+      };
+    }),
+    identifyCalls: trackingPlan.identifyCalls.map((s) => {
+      const sanitizedSchema = {
+        $schema: 'http://json-schema.org/draft-07/schema#',
+        ...s,
+      };
+      return {
+        raw: sanitizedSchema,
+        schema: parse(sanitizedSchema),
+      };
+    }),
+    groupCalls: trackingPlan.groupCalls.map((s) => {
+      const sanitizedSchema = {
+        $schema: 'http://json-schema.org/draft-07/schema#',
+        ...s,
+      };
+      return {
+        raw: sanitizedSchema,
+        schema: parse(sanitizedSchema),
+      };
+    }),
   };
 
   if (options.client.sdk === SDK.WEB || options.client.sdk === SDK.NODE) {
@@ -213,6 +296,10 @@ async function runGenerator<
     trackingPlanId: trackingPlan.id,
     trackingPlanVersion: trackingPlan.version,
     tracks: [],
+    identify: [],
+    page: [],
+    screen: [],
+    group: [],
     objects: [],
   };
 
@@ -339,6 +426,114 @@ async function runGenerator<
     }
 
     context.tracks.push({
+      functionDescription: schema.description,
+      rawJSONSchema: stringify(raw, {
+        space: '\t',
+      }),
+      rawEventName: client.namer.escapeString(schema.name),
+      ...t,
+    });
+  }
+
+  // Generate Screen Calls.
+  for (const { raw, schema } of trackingPlan.screenCalls) {
+    let t: T;
+    if (generator.generatePropertiesObject) {
+      const p = await traverseSchema(getPropertiesSchema(schema), '', 'screen');
+      t = await generator.generateTrackCall(client, schema, 'screen', p);
+    } else {
+      const properties: (P & BasePropertyContext)[] = [];
+      for (const property of getPropertiesSchema(schema).properties) {
+        properties.push(await traverseSchema(property, schema.name, 'screen'));
+      }
+      t = {
+        ...(await generator.generateTrackCall(client, schema, 'screen', properties)),
+        properties,
+      };
+    }
+
+    context.screen.push({
+      functionDescription: schema.description,
+      rawJSONSchema: stringify(raw, {
+        space: '\t',
+      }),
+      rawEventName: client.namer.escapeString(schema.name),
+      ...t,
+    });
+  }
+
+  // Generate Page Calls.
+  for (const { raw, schema } of trackingPlan.pageCalls) {
+    let t: T;
+    if (generator.generatePropertiesObject) {
+      const p = await traverseSchema(getPropertiesSchema(schema), '', 'page');
+      t = await generator.generateTrackCall(client, schema, 'page', p);
+    } else {
+      const properties: (P & BasePropertyContext)[] = [];
+      for (const property of getPropertiesSchema(schema).properties) {
+        properties.push(await traverseSchema(property, schema.name, 'page'));
+      }
+      t = {
+        ...(await generator.generateTrackCall(client, schema, 'page', properties)),
+        properties,
+      };
+    }
+
+    context.page.push({
+      functionDescription: schema.description,
+      rawJSONSchema: stringify(raw, {
+        space: '\t',
+      }),
+      rawEventName: client.namer.escapeString(schema.name),
+      ...t,
+    });
+  }
+
+  // Generate Group Calls.
+  for (const { raw, schema } of trackingPlan.groupCalls) {
+    let t: T;
+    if (generator.generatePropertiesObject) {
+      const p = await traverseSchema(getTraitsSchema(schema), '', 'group');
+      t = await generator.generateTrackCall(client, schema, 'group', p);
+    } else {
+      const properties: (P & BasePropertyContext)[] = [];
+      for (const property of getTraitsSchema(schema).properties) {
+        properties.push(await traverseSchema(property, schema.name, 'group'));
+      }
+      t = {
+        ...(await generator.generateTrackCall(client, schema, 'group', properties)),
+        properties,
+      };
+    }
+
+    context.group.push({
+      functionDescription: schema.description,
+      rawJSONSchema: stringify(raw, {
+        space: '\t',
+      }),
+      rawEventName: client.namer.escapeString(schema.name),
+      ...t,
+    });
+  }
+
+  // Generate Identify Calls.
+  for (const { raw, schema } of trackingPlan.identifyCalls) {
+    let t: T;
+    if (generator.generatePropertiesObject) {
+      const p = await traverseSchema(getTraitsSchema(schema), '', 'identify');
+      t = await generator.generateTrackCall(client, schema, 'identify', p);
+    } else {
+      const properties: (P & BasePropertyContext)[] = [];
+      for (const property of getTraitsSchema(schema).properties) {
+        properties.push(await traverseSchema(property, schema.name, 'identify'));
+      }
+      t = {
+        ...(await generator.generateTrackCall(client, schema, 'identify', properties)),
+        properties,
+      };
+    }
+
+    context.identify.push({
       functionDescription: schema.description,
       rawJSONSchema: stringify(raw, {
         space: '\t',
