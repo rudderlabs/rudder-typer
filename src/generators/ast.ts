@@ -105,12 +105,12 @@ export function getPropertiesSchema(event: Schema): ObjectTypeSchema {
     const propertiesSchema = event.properties.find(
       (schema: Schema): boolean => schema.name === 'properties',
     );
-    const isRequired = (propertiesSchema as ObjectTypeSchema).properties.find(
-      (schema: Schema): boolean => schema.isRequired === true,
-    );
     // The schema representing `.properties` in the RudderStack analytics
     // event should also always be an object.
     if (propertiesSchema && propertiesSchema.type === Type.OBJECT) {
+      const isRequired = (propertiesSchema as ObjectTypeSchema).properties.find(
+        (schema: Schema): boolean => schema.isRequired === true,
+      );
       properties = { ...propertiesSchema, isRequired: !!isRequired };
     }
   }
