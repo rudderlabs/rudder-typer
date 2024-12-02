@@ -39,10 +39,10 @@ public final class RudderTyperUtils {
             return props;
         }
 
-        List p = new ArrayList<>();
+        List<Object> p = new ArrayList<>();
         for(Object item : props) {
             if (item instanceof List) {
-                p.add(serializeList((List) item));
+                p.add(serializeList((List<?>) item));
             } else if(item instanceof SerializableProperties) {
                 p.add(((SerializableProperties) item).toRudderProperty());
             } else {
