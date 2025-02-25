@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.5.1](https://github.com/rudderlabs/rudder-typer/compare/v1.5.0...v1.5.1) (2025-02-25)
+
+
+### Bug Fixes
+
+* upgrade prettier from 3.3.3 to 3.4.2 ([#126](https://github.com/rudderlabs/rudder-typer/issues/126)) ([5491920](https://github.com/rudderlabs/rudder-typer/commit/5491920e210aeaf1ac6e3b740691ec18731786d3))
+
 ## [1.5.0](https://github.com/rudderlabs/rudder-typer/compare/v1.4.0...v1.5.0) (2025-02-14)
 
 
