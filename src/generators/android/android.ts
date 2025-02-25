@@ -201,7 +201,7 @@ function defaultPropertyContext(
       : undefined,
     enumValues: hasEnum && 'enum' in schema ? convertToEnum(schema.enum!, type) : undefined,
     type,
-    isVariableNullable: !schema.isRequired || !!schema.isNullable,
+    isVariableNullable: !!schema.isNullable,
     shouldThrowRuntimeError: schema.isRequired && !schema.isNullable,
     isListType: false,
     implementsSerializableProperties: false,

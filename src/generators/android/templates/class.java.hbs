@@ -56,9 +56,13 @@ public final class {{name}} extends SerializableProperties {
             List<?> p = RudderTyperUtils.serializeList({{name}});
             properties.put("{{rawName}}", p);
             {{else if implementsSerializableProperties}}
+            {{#if isVariableNullable}}
             if ({{name}} != null) {
                 properties.putValue("{{rawName}}", {{name}}.toRudderProperty());
             }
+            {{else}}
+            properties.putValue("{{rawName}}", {{name}}.toRudderProperty());
+            {{/if}}
             {{else}}
             properties.put("{{rawName}}", {{name}});
             {{/if}}
