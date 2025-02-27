@@ -15,7 +15,9 @@ class {{name}}: RudderTyperSerializable {
     {{/if}}
 
 {{#if description}}
-/// {{description}}
+/**
+  * {{description}}
+  */
 {{/if}}
     var {{name}}: {{#if hasEnum}}{{enumName}}{{else}}{{type}}{{/if}}{{#isVariableNullable}}?{{/isVariableNullable}}
 {{/each}}
