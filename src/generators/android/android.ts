@@ -94,7 +94,7 @@ export const android: Generator<
     let object: AndroidObjectContext | undefined;
 
     if (properties.length > 0) {
-      const className = client.namer.register(schema.name, 'class', {
+      const className = client.namer.register(schema.identifierName || schema.name, 'class', {
         transform: (name: string) => {
           return upperFirst(camelCase(name));
         },
