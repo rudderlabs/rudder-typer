@@ -7,21 +7,18 @@ import Foundation
 class {{name}}: RudderTyperSerializable {
 {{#each properties}}
     {{#if hasEnum}}
-    {{#uniqueEnum enumName enumValues}}
-    enum {{enumName}}: {{../enumType}} {
+    enum {{enumName}}: {{enumType}} {
         {{enumValues}}
     }
-    {{/uniqueEnum}}
     {{/if}}
-
-{{#if description}}
-/**
-  * {{description}}
-  */
-{{/if}}
+    {{#if description}}
+    /**
+     * {{description}}
+     */
+    {{/if}}
     var {{name}}: {{#if hasEnum}}{{enumName}}{{else}}{{type}}{{/if}}{{#isVariableNullable}}?{{/isVariableNullable}}
-{{/each}}
 
+{{/each}}
     {{functionSignature "init" properties false}} {
         {{#each properties}}
         self.{{name}} = {{name}}

@@ -18,12 +18,11 @@ class RudderTyperAnalytics {
     {{/if}}
     {{/each}}
     {{/each}}
-
     {{#each tracks}}
     {{#if functionDescription}}
     /**
-      * {{functionDescription}} 
-      */
+     * {{functionDescription}} 
+     */
     {{/if}}
     static func {{functionSignature functionName properties false}} {
         {{functionCall "RudderTyperAnalytics" functionName properties "options" "RSOption()"}}
