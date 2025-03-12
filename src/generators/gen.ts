@@ -356,7 +356,7 @@ async function runGenerator<
       }
 
       if (parentPath !== '') {
-        schema.name = eventName + upperFirst(schema.name);
+        schema.identifierName = eventName + upperFirst(schema.name);
       }
 
       const { property, object } = await generator.generateObject(
