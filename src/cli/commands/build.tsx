@@ -162,6 +162,9 @@ export const UpdatePlanStep: React.FC<UpdatePlanStepProps> = ({
         setFellbackToUpdate(true);
       }
 
+      let localCredentialsMissing = false;
+      let localApiError: string | undefined = undefined;
+
       // If we are pulling the latest Tracking Plan (npx rudder-typer), or if there is no local
       // copy of the Tracking Plan (plan.json), then query the API for the latest Tracking Plan.
       let newTrackingPlan: RudderAPI.TrackingPlan | undefined = undefined;
@@ -182,9 +185,12 @@ export const UpdatePlanStep: React.FC<UpdatePlanStepProps> = ({
           } catch (error) {
             handleError(error as WrappedError);
             if (isWrappedError(error)) {
-              setAPIError(error.description);
+              localApiError = error.description;
+              setAPIError(localApiError);
             } else {
-              setAPIError('API request failed');
+              const err = error as APIError;
+              localApiError = err.message;
+              setAPIError(localApiError);
             }
           }
 
@@ -194,11 +200,29 @@ export const UpdatePlanStep: React.FC<UpdatePlanStepProps> = ({
           }
         } else {
           setFailedToFindToken(true);
+
+          localCredentialsMissing = true;
+          const missingItems = [];
+          if (!token) missingItems.push('API token');
+          if (!email) missingItems.push('email');
+
+          const warningMessage = `Missing credentials: ${missingItems.join(' and ')}. Please run 'rudder-typer init' to set up your credentials.`;
+          handleError(wrapError(warningMessage));
         }
       }
       newTrackingPlan = newTrackingPlan || previousTrackingPlan;
       if (!newTrackingPlan) {
-        handleFatalError(wrapError('Unable to fetch Tracking Plan from local cache or API'));
+        if (localCredentialsMissing) {
+          handleFatalError(
+            wrapError(
+              "Authentication failed: API credentials missing. Run 'rudder-typer init' to set up your credentials.",
+            ),
+          );
+        } else if (localApiError) {
+          handleFatalError(wrapError(`Unable to fetch Tracking Plan: ${localApiError}`));
+        } else {
+          handleFatalError(wrapError('Unable to fetch Tracking Plan from local cache or API'));
+        }
         return null;
       }
 
