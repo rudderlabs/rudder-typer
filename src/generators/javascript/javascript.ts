@@ -136,9 +136,13 @@ export const javascript: Generator<
       };
     } else {
       // Otherwise generate an interface to represent this object.
-      const interfaceName = client.namer.register(schema.name, 'interface', {
-        transform: (name: string) => upperFirst(camelCase(name)),
-      });
+      const interfaceName = client.namer.register(
+        schema.identifierName || schema.name,
+        'interface',
+        {
+          transform: (name: string) => upperFirst(camelCase(name)),
+        },
+      );
       return {
         property: conditionallyNullable(schema, {
           name: client.namer.escapeString(schema.name),

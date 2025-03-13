@@ -14,6 +14,9 @@ export type UnionTypeSchema = SchemaMetadata & UnionTypeFields;
 
 export type SchemaMetadata = {
   name: string;
+  // The language-appropriate identifier name for this property or type
+  // Used across different generators for class names, interface names, etc.
+  identifierName?: string;
   description?: string;
   isRequired?: boolean;
   isNullable?: boolean;

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.5.3](https://github.com/rudderlabs/rudder-typer/compare/v1.5.2...v1.5.3) (2025-03-13)
+
+
+### Bug Fixes
+
+* improve error message for failure ([#148](https://github.com/rudderlabs/rudder-typer/issues/148)) ([9eb6643](https://github.com/rudderlabs/rudder-typer/commit/9eb66437dd9afeb9b2cd2b566513133184a74f6d))
+* remove prefix from property name ([#144](https://github.com/rudderlabs/rudder-typer/issues/144)) ([be2c393](https://github.com/rudderlabs/rudder-typer/commit/be2c3938da22d5f66bbdfe77280382e4ac28e9c9))
+
 ### [1.5.2](https://github.com/rudderlabs/rudder-typer/compare/v1.5.1...v1.5.2) (2025-03-04)
 
 ### [1.5.1](https://github.com/rudderlabs/rudder-typer/compare/v1.5.0...v1.5.1) (2025-02-25)

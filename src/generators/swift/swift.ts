@@ -122,7 +122,7 @@ export const swift: Generator<
     if (properties.length > 0) {
       // If at least one property is set, generate a class that only allows the explicitly
       // allowed properties.
-      const className = client.namer.register(schema.name, 'class', {
+      const className = client.namer.register(schema.identifierName || schema.name, 'class', {
         transform: (name: string) => {
           return `${upperFirst(camelCase(name))}`;
         },
