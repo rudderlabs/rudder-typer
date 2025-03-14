@@ -23,6 +23,6 @@
     "@rudderstack/rudder-sdk-node": "2.1.1",
     "ajv": "8.17.1",
     "ajv-draft-04": "1.0.0",
-    "dotenv": "16.4.5"
+    "dotenv": "16.4.7"
   }
 }
