@@ -215,7 +215,7 @@ export async function fetchTrackingPlans(options: {
     options.token,
     options.email,
   );
-  response.tracking_plans.map((tp) => ({
+  const v1Plans = response.tracking_plans.map((tp) => ({
     ...tp,
     createdAt: new Date(tp.create_time),
     updatedAt: new Date(tp.update_time),
@@ -226,13 +226,13 @@ export async function fetchTrackingPlans(options: {
     options.token,
     options.email,
   );
-  responseV2.trackingPlans.map((tp) => ({
+  const v2Plans = responseV2.trackingPlans.map((tp) => ({
     ...tp,
     createdAt: new Date(tp.createdAt),
     updatedAt: new Date(tp.updatedAt),
   }));
 
-  return response.tracking_plans.concat(responseV2.trackingPlans);
+  return [...v1Plans, ...v2Plans];
 }
 
 // fetchWorkspace lists the workspace found with a given Rudder API token.
