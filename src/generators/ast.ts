@@ -158,6 +158,31 @@ export function getTraitsSchema(event: Schema): ObjectTypeSchema {
   };
 }
 
+function copyAdvancedKeywords(from: JSONSchema7, to: Schema): void {
+  // List of known advanced keywords we want to preserve
+  const advancedKeywords = [
+    'format',
+    'pattern',
+    'maxLength',
+    'minLength',
+    'maximum',
+    'minimum',
+    'exclusiveMaximum',
+    'exclusiveMinimum',
+    'multipleOf',
+    'maxItems',
+    'minItems',
+    'uniqueItems',
+  ];
+
+  // Copy each keyword that exists in the source schema
+  for (const keyword of advancedKeywords) {
+    if (from[keyword as keyof JSONSchema7] !== undefined) {
+      (to as any)[keyword] = from[keyword as keyof JSONSchema7];
+    }
+  }
+}
+
 // parse transforms a JSON Schema into a standardized Schema.
 export function parse(raw: JSONSchema7, name?: string, isRequired?: boolean): Schema {
   // TODO: validate that the raw JSON Schema is a valid JSON Schema before attempting to parse it.
@@ -181,6 +206,8 @@ export function parse(raw: JSONSchema7, name?: string, isRequired?: boolean): Sc
   if (isNullable(raw)) {
     schema.isNullable = true;
   }
+
+  copyAdvancedKeywords(raw, schema);
 
   return schema;
 }

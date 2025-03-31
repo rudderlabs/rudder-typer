@@ -129,6 +129,9 @@ export interface Schema {
 		* {{description}}
 		*/
 		{{/if}}
+		{{#if advancedKeywordsDoc}}
+		{{advancedKeywordsDoc}}
+		{{/if}}
 		'{{name}}'{{#unless isRequired}}?{{/unless}}: {{#if hasEnum}}{{enumName}}{{else}}{{type}}{{/if}}
 		{{/each}}
 	}
