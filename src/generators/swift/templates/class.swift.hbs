@@ -16,6 +16,9 @@ class {{name}}: RudderTyperSerializable {
      * {{description}}
      */
     {{/if}}
+{{#if advancedKeywordsDoc}}
+{{{indentDoc advancedKeywordsDoc "    "}}}
+{{/if}}
     var {{name}}: {{#if hasEnum}}{{enumName}}{{else}}{{type}}{{/if}}{{#isVariableNullable}}?{{/isVariableNullable}}
 
 {{/each}}
