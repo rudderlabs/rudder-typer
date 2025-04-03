@@ -92,4 +92,12 @@ export async function registerStandardHelpers(): Promise<void> {
     }
     return '';
   });
+
+  Handlebars.registerHelper('indentDoc', function (text: string, indentation: string) {
+    if (!text) return '';
+
+    const lines = text.split('\n');
+
+    return lines.map((line) => indentation + line).join('\n');
+  });
 }

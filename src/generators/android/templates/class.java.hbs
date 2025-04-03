@@ -43,6 +43,10 @@ public final class {{name}} extends SerializableProperties {
          * This property is optional and not required to generate a valid {{../name}} object
          {{/if}}
          */
+        
+{{#if advancedKeywordsDoc}}
+{{indentDoc advancedKeywordsDoc "        "}}
+{{/if}}
         public Builder {{name}}(final {{#if isVariableNullable}}@Nullable{{else}}@NonNull{{/if}} {{#if hasEnum}}{{enumName}}{{else}}{{type}}{{/if}} {{name}}) {
             {{#if hasEnum}}
             {{#if isVariableNullable}}
