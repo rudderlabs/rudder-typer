@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0](https://github.com/rudderlabs/rudder-typer/compare/v1.5.3...v1.6.0) (2025-04-04)
+
+
+### Features
+
+* add advanced keywords docstring ([#154](https://github.com/rudderlabs/rudder-typer/issues/154)) ([fdb612d](https://github.com/rudderlabs/rudder-typer/commit/fdb612db938a5003a0dfaae4b23f62935f51b7f7))
+
+
+### Bug Fixes
+
+* sort by createdat tp choices during initialisation ([#151](https://github.com/rudderlabs/rudder-typer/issues/151)) ([6900663](https://github.com/rudderlabs/rudder-typer/commit/6900663a157c53ba2949d28d00d5ff06088f3823))
+
 ### [1.5.3](https://github.com/rudderlabs/rudder-typer/compare/v1.5.2...v1.5.3) (2025-03-13)
 
 
