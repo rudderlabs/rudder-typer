@@ -15,6 +15,9 @@
 {{#if description}}
 /// {{description}}
 {{/if}}
+{{#if advancedKeywordsDoc}}
+{{{advancedKeywordsDoc}}}
+{{/if}}
 @property ({{modifiers}}) {{type}}{{variableSeparator type}}{{name}};
 {{/each}}
 

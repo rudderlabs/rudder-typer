@@ -689,9 +689,8 @@ const TrackingPlanPrompt: React.FC<TrackingPlanPromptProps> = ({
       label: getTrackingPlanName(tp),
       value: getTrackingPlanName(tp),
     })),
-    'label',
-
-    'asc',
+    'createdAt',
+    'desc',
   );
   let initialIndex = choices.findIndex(
     (c) => !!trackingPlan && c.value === getTrackingPlanName(trackingPlan),

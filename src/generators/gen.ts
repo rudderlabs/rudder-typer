@@ -117,6 +117,7 @@ export type BasePropertyContext = {
   // The optional description of this property.
   description?: string;
   isRequired: boolean;
+  advancedKeywordsDoc?: string;
 };
 
 export type GeneratorClient = {
@@ -274,6 +275,49 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
   }
 }
 
+function generateAdvancedKeywordsDocString(schema: Record<string, any>): string {
+  const descriptions: Record<string, string> = {
+    format: 'Expected format',
+    pattern: 'The input should match this format',
+    maxLength: 'Maximum allowed characters',
+    minLength: 'Minimum required characters',
+    maximum: 'Highest allowed value (inclusive)',
+    minimum: 'Lowest allowed value (inclusive)',
+    exclusiveMaximum: 'Must be strictly less than this value',
+    exclusiveMinimum: 'Must be strictly greater than this value',
+    multipleOf: 'The value must be a multiple of this number',
+    maxItems: 'Maximum number of items in an array',
+    minItems: 'Minimum number of items required in an array',
+    uniqueItems: 'Ensures all array items are unique',
+  };
+
+  const advancedKeywordsKeys = Object.keys(descriptions);
+
+  // Check if schema has any advanced keywords
+  const hasAdvancedKeywords = advancedKeywordsKeys.some(
+    (key) => key in schema && schema[key] !== undefined,
+  );
+  if (!hasAdvancedKeywords) return '';
+
+  let docString = '/**\n * Advanced Validation Rules:\n *\n';
+
+  for (const key of advancedKeywordsKeys) {
+    if (key in schema && schema[key] !== undefined) {
+      const value = schema[key];
+      // Special handling for arrays (like enum)
+      if (Array.isArray(value)) {
+        docString += ` * - ${key}: ${JSON.stringify(value)} → ${descriptions[key]}.\n`;
+      } else {
+        docString += ` * - ${key}: \`${value}\` → ${descriptions[key]}.\n`;
+      }
+    }
+  }
+
+  docString += ' *\n * These advanced rules ensure proper data validation and type safety.\n */';
+
+  return docString;
+}
+
 async function runGenerator<
   R extends Record<string, unknown>,
   T extends Record<string, unknown>,
@@ -338,11 +382,16 @@ async function runGenerator<
     eventName: string,
   ): Promise<P & BasePropertyContext> => {
     const path = `${parentPath}->${schema.name}`;
+
+    const schemaWithAdvancedKeywords = schema as Record<string, any>;
+    const advancedKeywordsDoc = generateAdvancedKeywordsDocString(schemaWithAdvancedKeywords);
+
     const base = {
       rawName: client.namer.escapeString(schema.name),
       schemaType: schema.type,
       description: schema.description,
       isRequired: !!schema.isRequired,
+      ...(advancedKeywordsDoc ? { advancedKeywordsDoc } : {}),
     };
     let p: P;
     if ([Type.ANY, Type.STRING, Type.BOOLEAN, Type.INTEGER, Type.NUMBER].includes(schema.type)) {
