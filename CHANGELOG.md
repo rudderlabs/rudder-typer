@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.1](https://github.com/rudderlabs/rudder-typer/compare/v1.6.0...v1.6.1) (2025-04-17)
+
+
+### Bug Fixes
+
+* add idenitfy for context - traits ([#157](https://github.com/rudderlabs/rudder-typer/issues/157)) ([cb1e0af](https://github.com/rudderlabs/rudder-typer/commit/cb1e0af34bc265bf320a6ec35e34a166c47c43a0))
+* examples/node-javascript/package.json & examples/node-javascript/package-lock.json to reduce vulnerabilities ([#153](https://github.com/rudderlabs/rudder-typer/issues/153)) ([970b355](https://github.com/rudderlabs/rudder-typer/commit/970b355028410683c07faff55b9f8fe6964964c4))
+* examples/node-typescript/package.json & examples/node-typescript/package-lock.json to reduce vulnerabilities ([#152](https://github.com/rudderlabs/rudder-typer/issues/152)) ([c2e3826](https://github.com/rudderlabs/rudder-typer/commit/c2e382651bf01ecd7e3ce3c14c4e64d093f47c8a))
+
 ## [1.6.0](https://github.com/rudderlabs/rudder-typer/compare/v1.5.3...v1.6.0) (2025-04-04)
 
 

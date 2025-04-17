@@ -144,6 +144,21 @@ export function getTraitsSchema(event: Schema): ObjectTypeSchema {
 
     if (traitsSchema && traitsSchema.type === Type.OBJECT) {
       traits = traitsSchema;
+    } else {
+      // If not found at top level, look for traits in context
+      const contextSchema = event.properties.find(
+        (schema: Schema): boolean => schema.name === 'context',
+      );
+
+      if (contextSchema && contextSchema.type === Type.OBJECT) {
+        const contextTraitsSchema = contextSchema.properties.find(
+          (schema: Schema): boolean => schema.name === 'traits',
+        );
+
+        if (contextTraitsSchema && contextTraitsSchema.type === Type.OBJECT) {
+          traits = contextTraitsSchema;
+        }
+      }
     }
   }
 

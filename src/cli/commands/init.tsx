@@ -688,8 +688,9 @@ const TrackingPlanPrompt: React.FC<TrackingPlanPromptProps> = ({
     trackingPlans.map((tp) => ({
       label: getTrackingPlanName(tp),
       value: getTrackingPlanName(tp),
+      updatedAt: tp.updatedAt,
     })),
-    'createdAt',
+    'updatedAt',
     'desc',
   );
   let initialIndex = choices.findIndex(

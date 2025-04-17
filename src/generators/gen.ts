@@ -278,7 +278,7 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
 function generateAdvancedKeywordsDocString(schema: Record<string, any>): string {
   const descriptions: Record<string, string> = {
     format: 'Expected format',
-    pattern: 'The input should match this format',
+    pattern: 'The input should be a valid regular expression',
     maxLength: 'Maximum allowed characters',
     minLength: 'Minimum required characters',
     maximum: 'Highest allowed value (inclusive)',
