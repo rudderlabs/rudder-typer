@@ -1,0 +1,83 @@
+# Cursor Rules for rudder-typer
+# These rules help maintain code quality and consistency
+
+# Prefer using nullish coalescing (??) over logical OR (||) for default values
+rule "Use nullish coalescing operator" {
+  pattern = "\\b\\w+(?:\\?\\.|\\.)\\w+\\s*\\|\\|\\s*['\"\\w]+"
+  message = "Use the nullish coalescing operator (??) instead of logical OR (||) for default values"
+  severity = "warning"
+}
+
+# Avoid deeply nested if statements (more than 3 levels)
+rule "Avoid deeply nested conditionals" {
+  pattern = "if\\s*\\(.+\\)\\s*\\{[\\s\\S]+if\\s*\\(.+\\)\\s*\\{[\\s\\S]+if\\s*\\(.+\\)\\s*\\{[\\s\\S]+if\\s*\\(.+\\)\\s*\\{"
+  message = "Deeply nested conditionals detected. Consider refactoring using early returns or helper functions."
+  severity = "warning"
+}
+
+# Use recursive functions for complex object traversal instead of nested loops
+rule "Prefer recursive functions for object traversal" {
+  pattern = "for\\s*\\(.+\\)\\s*\\{[\\s\\S]+for\\s*\\(.+\\)\\s*\\{[\\s\\S]+for\\s*\\(.+\\)\\s*\\{"
+  message = "Multiple nested loops detected. Consider using a recursive function for cleaner code."
+  severity = "warning"
+}
+
+# Ensure proper error handling when accessing potentially undefined properties
+rule "Safe property access" {
+  pattern = "\\.\\w+\\.\\w+\\.\\w+"
+  exclude = "\\?\\."
+  message = "Deep property access without optional chaining detected. Consider using optional chaining (?.) for safer access."
+  severity = "warning"
+}
+
+# Prefer type-safe comparisons to avoid type coercion bugs
+rule "Use strict equality" {
+  pattern = "==(?!=)"
+  message = "Use === for strict equality comparison to avoid type coercion issues"
+  severity = "warning"
+}
+
+# Enforce proper typing in TypeScript
+rule "Avoid any type" {
+  pattern = ":\\s*any\\b"
+  exclude = "(Record<string,\\s*any>|\\[]:\\s*any)"
+  message = "Avoid using 'any' type when possible. Consider using a more specific type."
+  severity = "info"
+}
+
+# Prefer async/await over direct Promise handling
+rule "Prefer async/await" {
+  pattern = "\\.then\\(\\s*\\("
+  message = "Consider using async/await instead of Promise.then() for better readability"
+  severity = "info"
+}
+
+# Ensure recursive functions have proper termination conditions
+rule "Recursive function safety" {
+  pattern = "function\\s+\\w+[\\s\\S]{0,100}\\1\\s*\\("
+  message = "Recursive function detected. Ensure it has a proper termination condition to avoid stack overflow."
+  severity = "warning"
+}
+
+# Consistent function style
+rule "Consistent function style" {
+  pattern = "function\\s+\\w+"
+  message = "Consider using arrow functions for consistency with the codebase style"
+  severity = "info"
+}
+
+# Encourage descriptive variable names
+rule "Descriptive variable names" {
+  pattern = "\\blet\\s+[a-z][a-z0-9]?\\b|\\bconst\\s+[a-z][a-z0-9]?\\b"
+  exclude = "\\blet\\s+i\\b|\\bconst\\s+i\\b"
+  message = "Use descriptive variable names instead of short, ambiguous ones"
+  severity = "info"
+}
+
+# Documentation for complex functions
+rule "Document complex functions" {
+  pattern = "function\\s+\\w+[\\s\\S]{300,}"
+  exclude = "/\\*\\*[\\s\\S]+\\*/"
+  message = "Large functions should have JSDoc documentation"
+  severity = "info"
+} 
