@@ -1,21 +1,59 @@
-import { Type, Schema } from '../ast.js';
+import { Type, Schema, customTypesByEvent, CustomType } from '../ast.js';
 import * as prettier from 'prettier';
 import { transpileModule } from 'typescript';
 import { Language, SDK } from '../options.js';
-import { Generator, GeneratorClient, type File } from '../gen.js';
+import {
+  Generator,
+  GeneratorClient,
+  type File,
+  generateAdvancedKeywordsDocString,
+  BaseObjectContext,
+} from '../gen.js';
 import { toTarget, toModule } from './targets.js';
 import { registerPartial } from '../../templates.js';
 import lodash from 'lodash';
 import { getEnumPropertyTypes, sanitizeEnumKey, sanitizeKey } from '../utils.js';
+import { JSONSchema7 } from 'json-schema';
 
 const { camelCase, upperFirst } = lodash;
 
 // These contexts are what will be passed to Handlebars to perform rendering.
 // Everything in these contexts should be properly sanitized.
 
+type CustomTypeEnum = {
+  typeName: string;
+  isEnum: true;
+  enumValues: { key: string; value: string }[];
+};
+
+type CustomTypeInterface = {
+  typeName: string;
+  isEnum: false;
+  properties: {
+    name: string;
+    type: string;
+    isRequired: boolean;
+    isNullable: boolean;
+    description?: string;
+    advancedKeywordsDoc?: string;
+  }[];
+};
+
+type CustomTypeRef = {
+  name: string;
+  type: string;
+  isRequired: boolean;
+  isNullable: boolean;
+  description?: string;
+  advancedKeywordsDoc?: string;
+};
+
 type JavaScriptRootContext = {
   isBrowser: boolean;
   useProxy: boolean;
+  customTypes?: (CustomTypeEnum | CustomTypeInterface)[];
+  customTypeRefs?: CustomTypeRef[];
+  eventName?: string;
 };
 
 // Represents a single exposed track() call.
@@ -53,6 +91,348 @@ type JavaScriptPropertyContext = {
   // The formatted enum values
   enumValues?: any;
 };
+
+function findRefInSchema(schema: JSONSchema7 | any): { refPath: string; propName: string } | null {
+  if ('$ref' in schema && typeof schema.$ref === 'string' && schema.$ref.startsWith('#/$defs/')) {
+    return { refPath: schema.$ref, propName: schema.name || '' };
+  }
+
+  if ('properties' in schema && schema.properties && typeof schema.properties === 'object') {
+    for (const [propName, propSchema] of Object.entries(schema.properties)) {
+      if (propSchema && typeof propSchema === 'object') {
+        if (
+          '$ref' in propSchema &&
+          typeof propSchema.$ref === 'string' &&
+          propSchema.$ref.startsWith('#/$defs/')
+        ) {
+          return { refPath: propSchema.$ref, propName };
+        }
+
+        const result = findRefInSchema(propSchema);
+        if (result) return result;
+      }
+    }
+
+    if ('properties' in schema.properties && typeof schema.properties.properties === 'object') {
+      const innerProps = schema.properties.properties;
+      for (const [propName, propSchema] of Object.entries(innerProps)) {
+        if (propSchema && typeof propSchema === 'object') {
+          if (
+            '$ref' in propSchema &&
+            typeof propSchema.$ref === 'string' &&
+            propSchema.$ref.startsWith('#/$defs/')
+          ) {
+            return { refPath: propSchema.$ref, propName };
+          }
+
+          const result = findRefInSchema(propSchema);
+          if (result) return result;
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+type TypeDependency = {
+  name: string;
+  dependencies: Set<string>;
+  processed: boolean;
+};
+
+const processedTypeCache: Record<string, string> = {};
+
+// Map of type dependencies
+const typeDependencyMap: Record<string, TypeDependency> = {};
+
+// Extracts dependencies from a schema
+function extractTypeDependencies(schema: Schema): Set<string> {
+  const dependencies = new Set<string>();
+
+  if ('$ref' in schema && typeof schema.$ref === 'string') {
+    const refName = schema.$ref.split('/').pop();
+    if (refName) {
+      dependencies.add(refName);
+    }
+  }
+
+  if (schema.type === Type.ARRAY && 'items' in schema && schema.items) {
+    if ('$ref' in schema.items && typeof schema.items.$ref === 'string') {
+      const refName = schema.items.$ref.split('/').pop();
+      if (refName) {
+        dependencies.add(refName);
+      }
+    }
+
+    const itemDeps = extractTypeDependencies(schema.items as any);
+    itemDeps.forEach((dep) => dependencies.add(dep));
+  }
+
+  if (schema.type === Type.OBJECT && 'properties' in schema) {
+    for (const prop of schema.properties) {
+      if ('$ref' in prop && typeof prop.$ref === 'string') {
+        const refName = prop.$ref.split('/').pop();
+        if (refName) {
+          dependencies.add(refName);
+        }
+      }
+
+      const propDeps = extractTypeDependencies(prop);
+      propDeps.forEach((dep) => dependencies.add(dep));
+    }
+  }
+
+  return dependencies;
+}
+
+// Get types in dependency order
+function getOrderedTypes(customTypes: CustomType[]): CustomType[] {
+  Object.keys(typeDependencyMap).forEach((key) => delete typeDependencyMap[key]);
+
+  // First pass: build dependency map
+  for (const customType of customTypes) {
+    const { name, schema } = customType;
+    const dependencies = extractTypeDependencies(schema);
+
+    typeDependencyMap[name] = {
+      name,
+      dependencies,
+      processed: false,
+    };
+  }
+
+  // Second pass: order types by dependencies
+  const orderedTypes: CustomType[] = [];
+  const remainingTypes = [...customTypes];
+
+  let progress = true;
+  while (remainingTypes.length > 0 && progress) {
+    progress = false;
+
+    for (let i = remainingTypes.length - 1; i >= 0; i--) {
+      const type = remainingTypes[i];
+      const deps = typeDependencyMap[type.name]?.dependencies || new Set();
+
+      const allDepsProcessed = Array.from(deps).every(
+        (dep) => !typeDependencyMap[dep] || typeDependencyMap[dep].processed,
+      );
+
+      if (allDepsProcessed) {
+        const [removed] = remainingTypes.splice(i, 1);
+        orderedTypes.push(removed);
+        if (typeDependencyMap[removed.name]) {
+          typeDependencyMap[removed.name].processed = true;
+        }
+        progress = true;
+      }
+    }
+  }
+
+  // Handle remaining types (circular dependencies)
+  if (remainingTypes.length > 0) {
+    orderedTypes.push(...remainingTypes);
+  }
+
+  return orderedTypes;
+}
+
+function processCustomType(
+  customType: CustomType,
+  customTypeReferences: Record<string, string>,
+): {
+  typeDetails: CustomTypeEnum | CustomTypeInterface | null;
+  typeRef: CustomTypeRef | null;
+} {
+  const { name, schema } = customType;
+
+  if (processedTypeCache[name]) {
+    return {
+      typeDetails: null,
+      typeRef: {
+        name,
+        type: processedTypeCache[name],
+        isRequired: !!schema.isRequired,
+        isNullable: !!schema.isNullable,
+        description: schema.description,
+        advancedKeywordsDoc: generateAdvancedKeywordsDocString(schema),
+      },
+    };
+  }
+
+  let typeDetails: CustomTypeEnum | CustomTypeInterface | null = null;
+  let typeRef: CustomTypeRef | null = null;
+  let typeValue: string = 'any';
+
+  // Handle enum types
+  if (schema.type === Type.STRING && 'enum' in schema && schema.enum) {
+    const typeName = upperFirst(camelCase(name));
+    const enumValues = schema.enum.map((value: any) => {
+      const key = `S_${sanitizeKey(value)}`;
+      const stringValue = `'${String(value).replace(/'/g, "\\'").trim()}'`;
+      return { key, value: stringValue };
+    });
+
+    typeDetails = {
+      typeName,
+      isEnum: true,
+      enumValues,
+    };
+
+    typeValue = typeName;
+  } else if (schema.type === Type.BOOLEAN && 'enum' in schema && schema.enum) {
+    typeValue = 'boolean';
+    typeDetails = null;
+  } else if (
+    (schema.type === Type.NUMBER || schema.type === Type.INTEGER) &&
+    'enum' in schema &&
+    schema.enum
+  ) {
+    const typeName = upperFirst(camelCase(name));
+    const enumValues = schema.enum.map((value: any) => {
+      const key = `N_${sanitizeKey(value)}`;
+      const numValue = `${value}`;
+      return { key, value: numValue };
+    });
+
+    typeDetails = {
+      typeName,
+      isEnum: true,
+      enumValues,
+    };
+
+    typeValue = typeName;
+  }
+  // Handle array types
+  else if (
+    schema.type === Type.ARRAY ||
+    (Array.isArray(schema.type) && schema.type.includes('array'))
+  ) {
+    let itemType = 'any';
+
+    // If items has a $ref, use that type
+    if (
+      'items' in schema &&
+      schema.items &&
+      typeof schema.items === 'object' &&
+      '$ref' in schema.items &&
+      typeof schema.items.$ref === 'string'
+    ) {
+      const refName = schema.items.$ref.split('/').pop();
+      if (refName) {
+        itemType = `CustomTypeDefs['${refName}']`;
+      }
+    }
+    // Otherwise get the type for the items
+    else if ('items' in schema && schema.items) {
+      itemType = getTypeForSchema(schema.items, customTypeReferences);
+
+      const typeName = upperFirst(camelCase(name));
+
+      typeValue = `${itemType}[]`;
+
+      if (
+        itemType === 'string' ||
+        itemType === 'number' ||
+        itemType === 'boolean' ||
+        itemType === 'any'
+      ) {
+        return {
+          typeDetails: null,
+          typeRef: {
+            name,
+            type: typeValue,
+            isRequired: !!schema.isRequired,
+            isNullable: !!schema.isNullable,
+            description: schema.description,
+            advancedKeywordsDoc: generateAdvancedKeywordsDocString(schema),
+          },
+        };
+      }
+
+      typeValue = typeName;
+
+      return {
+        typeDetails: {
+          typeName,
+          isEnum: false,
+          properties: [
+            {
+              name: 'item',
+              type: itemType,
+              isRequired: true,
+              isNullable: false,
+            },
+          ],
+        },
+        typeRef: {
+          name,
+          type: `${itemType}[]`,
+          isRequired: !!schema.isRequired,
+          isNullable: !!schema.isNullable,
+          description: schema.description,
+          advancedKeywordsDoc: generateAdvancedKeywordsDocString(schema),
+        },
+      };
+    }
+
+    typeValue = `${itemType}[]`;
+  }
+  // Handle object types
+  else if (schema.type === Type.OBJECT && 'properties' in schema) {
+    const typeName = upperFirst(camelCase(name));
+    const properties = schema.properties.map((prop: Schema) => {
+      let propType = '';
+      let refName = '';
+
+      if ('$ref' in prop && typeof prop.$ref === 'string') {
+        refName = prop.$ref.split('/').pop() || '';
+        if (refName) {
+          propType = `CustomTypeDefs['${refName}']`;
+        } else {
+          propType = getTypeForSchema(prop, customTypeReferences);
+        }
+      } else {
+        propType = getTypeForSchema(prop, customTypeReferences);
+      }
+
+      return {
+        name: prop.name,
+        type: propType,
+        isRequired: !!prop.isRequired,
+        isNullable: !!prop.isNullable,
+        description: prop.description,
+        advancedKeywordsDoc: generateAdvancedKeywordsDocString(prop),
+      };
+    });
+
+    typeDetails = {
+      typeName,
+      isEnum: false,
+      properties,
+    };
+
+    typeValue = typeName;
+  }
+  // Handle simple types
+  else {
+    typeValue = getTypeForSchema(schema, customTypeReferences);
+  }
+
+  typeRef = {
+    name,
+    type: typeValue,
+    isRequired: !!schema.isRequired,
+    isNullable: !!schema.isNullable,
+    description: schema.description,
+    advancedKeywordsDoc: generateAdvancedKeywordsDocString(schema),
+  };
+
+  processedTypeCache[name] = typeValue;
+  customTypeReferences[name] = typeValue;
+
+  return { typeDetails, typeRef };
+}
 
 export const javascript: Generator<
   JavaScriptRootContext,
@@ -98,6 +478,35 @@ export const javascript: Generator<
     };
   },
   generatePrimitive: async (client, schema) => {
+    // Check if this property has a $ref
+    if ('$ref' in schema && typeof schema.$ref === 'string') {
+      const ref = schema.$ref;
+      if (ref.startsWith('#/$defs/')) {
+        const typeName = ref.replace('#/$defs/', '');
+        return conditionallyNullable(schema, {
+          name: client.namer.escapeString(schema.name),
+          type: `CustomTypeDefs['${typeName}']`,
+        });
+      }
+    }
+
+    // Use the recursive function to find references in nested properties
+    const ref = findRefInSchema(schema);
+    if (ref) {
+      const typeName = ref.refPath.replace('#/$defs/', '');
+      return conditionallyNullable(schema, {
+        name: client.namer.escapeString(ref.propName),
+        type: `CustomTypeDefs['${typeName}']`,
+      });
+    }
+
+    if ('__refName' in schema && schema.__refName) {
+      return conditionallyNullable(schema, {
+        name: client.namer.escapeString(schema.name),
+        type: `CustomTypeDefs['${schema.__refName}']`,
+      });
+    }
+
     let type = 'any';
     let hasEnum = false;
 
@@ -120,11 +529,36 @@ export const javascript: Generator<
       hasEnum,
     );
   },
-  generateArray: async (client, schema, items) =>
-    conditionallyNullable(schema, {
+  generateArray: async (client, schema, items) => {
+    if ('$ref' in items && typeof items.$ref === 'string' && items.$ref.startsWith('#/$defs/')) {
+      const typeName = items.$ref.replace('#/$defs/', '');
+      return conditionallyNullable(schema, {
+        name: client.namer.escapeString(schema.name),
+        type: `CustomTypeDefs['${typeName}'][]`,
+      });
+    }
+
+    if ('__refName' in items && items.__refName) {
+      return conditionallyNullable(schema, {
+        name: client.namer.escapeString(schema.name),
+        type: `CustomTypeDefs['${items.__refName}'][]`,
+      });
+    }
+
+    const ref = findRefInSchema(items);
+    if (ref) {
+      const typeName = ref.refPath.replace('#/$defs/', '');
+      return conditionallyNullable(schema, {
+        name: client.namer.escapeString(schema.name),
+        type: `CustomTypeDefs['${typeName}'][]`,
+      });
+    }
+
+    return conditionallyNullable(schema, {
       name: client.namer.escapeString(schema.name),
       type: `${items.type}[]`,
-    }),
+    });
+  },
   generateObject: async (client, schema, properties) => {
     if (properties.length === 0) {
       // If no properties are set, replace this object with a untyped map to allow any properties.
@@ -143,6 +577,81 @@ export const javascript: Generator<
           transform: (name: string) => upperFirst(camelCase(name)),
         },
       );
+
+      if (
+        '$ref' in schema &&
+        typeof schema.$ref === 'string' &&
+        schema.$ref.startsWith('#/$defs/')
+      ) {
+        const typeName = schema.$ref.replace('#/$defs/', '');
+        return {
+          property: conditionallyNullable(schema, {
+            name: client.namer.escapeString(schema.name),
+            type: `CustomTypeDefs['${typeName}']`,
+          }),
+        };
+      }
+
+      if (
+        properties.length === 1 &&
+        'properties' in schema &&
+        Array.isArray(schema.properties) &&
+        schema.properties.length === 1
+      ) {
+        const prop = schema.properties[0];
+
+        if ('$ref' in prop) {
+          console.log(`Property has $ref: ${prop.$ref}`);
+        }
+
+        if ('$ref' in prop && typeof prop.$ref === 'string' && prop.$ref.startsWith('#/$defs/')) {
+          const refTypeName = prop.$ref.replace('#/$defs/', '');
+          return {
+            property: conditionallyNullable(schema, {
+              name: client.namer.escapeString(schema.name),
+              type: `CustomTypeDefs['${refTypeName}']`,
+            }),
+          };
+        }
+      }
+
+      const processedProperties = properties.map((prop) => {
+        if ('$ref' in prop && typeof prop.$ref === 'string' && prop.$ref.startsWith('#/$defs/')) {
+          const typeName = prop.$ref.replace('#/$defs/', '');
+          return {
+            ...prop,
+            type: `CustomTypeDefs['${typeName}']`,
+          };
+        }
+
+        if ('__refName' in prop && prop.__refName) {
+          return {
+            ...prop,
+            type: `CustomTypeDefs['${prop.__refName}']`,
+          };
+        }
+
+        if ('properties' in prop && prop.properties && typeof prop.properties === 'object') {
+          const innerProps = prop.properties;
+          if (innerProps && typeof innerProps === 'object') {
+            for (const [propName, propSchema] of Object.entries(innerProps)) {
+              if (propSchema && typeof propSchema === 'object' && '$ref' in propSchema) {
+                const ref = propSchema.$ref;
+                if (typeof ref === 'string' && ref.startsWith('#/$defs/')) {
+                  const typeName = ref.replace('#/$defs/', '');
+                  return {
+                    ...prop,
+                    name: propName,
+                    type: `CustomTypeDefs['${typeName}']`,
+                  };
+                }
+              }
+            }
+          }
+        }
+        return prop;
+      });
+
       return {
         property: conditionallyNullable(schema, {
           name: client.namer.escapeString(schema.name),
@@ -150,6 +659,7 @@ export const javascript: Generator<
         }),
         object: {
           name: interfaceName,
+          properties: processedProperties,
         },
       };
     }
@@ -166,11 +676,116 @@ export const javascript: Generator<
   generateTrackCall: async (client, _schema, functionName, propertiesObject) => ({
     functionName: functionName,
     propertiesType: propertiesObject.type,
-    // The properties object in a.js can be omitted if no properties are required.
     isPropertiesOptional: client.options.client.sdk === SDK.WEB && !propertiesObject.isRequired,
   }),
   generateRoot: async (client, context) => {
-    // index.hbs contains all JavaScript client logic.
+    Object.keys(customTypeReferences).forEach((key) => delete customTypeReferences[key]);
+    Object.keys(processedTypeCache).forEach((key) => delete processedTypeCache[key]);
+
+    const allCustomTypes: (CustomTypeEnum | CustomTypeInterface)[] = [];
+    const allCustomTypeRefs: CustomTypeRef[] = [];
+
+    const allTypes: CustomType[] = [];
+    for (const customTypes of Object.values(customTypesByEvent)) {
+      if (customTypes.length > 0) {
+        allTypes.push(...customTypes);
+      }
+    }
+
+    const orderedTypes = getOrderedTypes(allTypes);
+
+    // First pass - process all custom types to build the reference lookup
+    for (const customType of orderedTypes) {
+      if (customTypeReferences[customType.name]) {
+        continue;
+      }
+
+      const { typeDetails, typeRef } = processCustomType(customType, customTypeReferences);
+
+      if (typeDetails) {
+        allCustomTypes.push(typeDetails);
+      }
+
+      if (typeRef) {
+        allCustomTypeRefs.push(typeRef);
+      }
+    }
+
+    // Second pass - for each interface property that references a custom type,
+    for (const obj of context.objects || []) {
+      if (!obj.properties) continue;
+
+      for (let i = 0; i < obj.properties.length; i++) {
+        const prop = obj.properties[i];
+
+        for (const customTypeRef of allCustomTypeRefs) {
+          if (prop.name === customTypeRef.name && prop.type === 'string[]') {
+            prop.type = `CustomTypeDefs['${customTypeRef.name}']`;
+          }
+
+          if (
+            prop.type === customTypeRef.type &&
+            !prop.type.startsWith('CustomTypeDefs[') &&
+            customTypeRef.type !== 'string' &&
+            customTypeRef.type !== 'number' &&
+            customTypeRef.type !== 'boolean'
+          ) {
+            prop.type = `CustomTypeDefs['${customTypeRef.name}']`;
+          }
+        }
+      }
+    }
+
+    if (context.objects) {
+      const objectsMap = new Map<
+        string,
+        JavaScriptObjectContext & BaseObjectContext<JavaScriptPropertyContext>
+      >();
+      for (const obj of context.objects) {
+        objectsMap.set(obj.name, obj);
+      }
+
+      const filteredObjects = context.objects.filter((obj) => {
+        if (!obj.properties || obj.properties.length !== 1) {
+          return true;
+        }
+
+        const prop = obj.properties[0];
+        if (
+          prop &&
+          prop.type &&
+          typeof prop.type === 'string' &&
+          prop.type.includes("CustomTypeDefs['")
+        ) {
+          // Check if this single-property interface is used as a wrapper by other interfaces
+          const isUsedAsWrapper = [...objectsMap.values()].some((otherObj) => {
+            return otherObj.properties?.some((otherProp) => otherProp.type === obj.name);
+          });
+
+          if (isUsedAsWrapper) {
+            for (const otherObj of context.objects) {
+              if (otherObj.properties) {
+                for (const otherProp of otherObj.properties as JavaScriptPropertyContext[]) {
+                  if (otherProp.type === obj.name) {
+                    otherProp.type = prop.type;
+                  }
+                }
+              }
+            }
+            return false;
+          }
+        }
+        return true;
+      });
+
+      context.objects = filteredObjects;
+    }
+
+    if (allCustomTypes.length > 0 || allCustomTypeRefs.length > 0) {
+      context.customTypes = allCustomTypes;
+      context.customTypeRefs = allCustomTypeRefs;
+    }
+
     await client.generateFile<JavaScriptRootContext>(
       client.options.client.language === Language.TYPESCRIPT ? 'index.ts' : 'index.js',
       'generators/javascript/templates/index.hbs',
@@ -254,4 +869,72 @@ function conditionallyNullable(
     enumValues:
       hasEnum && 'enum' in schema ? convertToEnum(schema.enum!, property.type) : undefined,
   };
+}
+
+const customTypeReferences: Record<string, string> = {};
+
+export function getTypeForSchema(schema: any, customTypes: Record<string, string>): string {
+  if (schema.$ref) {
+    const __refName = schema.$ref.split('/').pop();
+    if (__refName) {
+      if (customTypes[__refName]) {
+        return customTypes[__refName];
+      }
+      if (customTypeReferences[__refName]) {
+        return customTypeReferences[__refName];
+      }
+      return `CustomTypeDefs['${__refName}']`;
+    }
+    return 'any';
+  }
+
+  if (schema.type === 6 || (Array.isArray(schema.type) && schema.type.includes('array'))) {
+    if ('items' in schema && schema.items) {
+      if ('$ref' in schema.items && typeof schema.items.$ref === 'string') {
+        const __refName = schema.items.$ref.split('/').pop();
+        if (__refName) {
+          return `CustomTypeDefs['${__refName}'][]`;
+        }
+      }
+      const itemsType = getTypeForSchema(schema.items, customTypes);
+      return `${itemsType}[]`;
+    }
+    return 'any[]';
+  }
+
+  if (schema.type === 5 || (Array.isArray(schema.type) && schema.type.includes('object'))) {
+    if (!schema.properties) {
+      return 'Record<string, any>';
+    }
+
+    const properties = Object.entries(schema.properties)
+      .map(([key, value]) => {
+        const propertySchema = value as any;
+        const isRequired = schema.required?.includes(key);
+        const type = getTypeForSchema(propertySchema, customTypes);
+        return `${key}${isRequired ? '' : '?'}: ${type}`;
+      })
+      .join(';\n  ');
+
+    return `{\n  ${properties}\n}`;
+  }
+
+  switch (schema.type) {
+    case 1: // Type.STRING
+      return 'string';
+    case 4: // Type.NUMBER
+    case 3: // Type.INTEGER
+      return 'number';
+    case 2: // Type.BOOLEAN
+      return 'boolean';
+    case 5: // Type.OBJECT
+      return 'Record<string, any>';
+    case 6: // Type.ARRAY
+      return 'any[]';
+    case 7: // Type.UNION
+      return 'any';
+    case 0: // Type.ANY
+    default:
+      return 'any';
+  }
 }

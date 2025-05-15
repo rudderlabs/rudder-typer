@@ -7,6 +7,7 @@ import {
   PrimitiveTypeSchema,
   getTraitsSchema,
   UnionTypeSchema,
+  extractCustomTypes,
 } from './ast.js';
 import { javascript } from './javascript/index.js';
 import { objc } from './objc/index.js';
@@ -209,6 +210,11 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
     id: trackingPlan.id,
     version: trackingPlan.version,
     trackCalls: trackingPlan.trackCalls.map((s) => {
+      if (s.$defs) {
+        const eventName = s.title?.toString() ?? 'Track';
+        extractCustomTypes(s, eventName);
+      }
+
       const sanitizedSchema = {
         $schema: 'http://json-schema.org/draft-07/schema#',
         ...s,
@@ -219,6 +225,11 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
       };
     }),
     screenCalls: trackingPlan.screenCalls.map((s) => {
+      if (s.$defs) {
+        const eventName = s.title?.toString() ?? 'Screen';
+        extractCustomTypes(s, eventName);
+      }
+
       const sanitizedSchema = {
         $schema: 'http://json-schema.org/draft-07/schema#',
         ...s,
@@ -229,6 +240,11 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
       };
     }),
     pageCalls: trackingPlan.pageCalls.map((s) => {
+      if (s.$defs) {
+        const eventName = s.title?.toString() ?? 'Page';
+        extractCustomTypes(s, eventName);
+      }
+
       const sanitizedSchema = {
         $schema: 'http://json-schema.org/draft-07/schema#',
         ...s,
@@ -239,6 +255,11 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
       };
     }),
     identifyCalls: trackingPlan.identifyCalls.map((s) => {
+      if (s.$defs) {
+        const eventName = s.title?.toString() ?? 'Identify';
+        extractCustomTypes(s, eventName);
+      }
+
       const sanitizedSchema = {
         $schema: 'http://json-schema.org/draft-07/schema#',
         ...s,
@@ -249,6 +270,11 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
       };
     }),
     groupCalls: trackingPlan.groupCalls.map((s) => {
+      if (s.$defs) {
+        const eventName = s.title?.toString() ?? 'Group';
+        extractCustomTypes(s, eventName);
+      }
+
       const sanitizedSchema = {
         $schema: 'http://json-schema.org/draft-07/schema#',
         ...s,
@@ -275,7 +301,7 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
   }
 }
 
-function generateAdvancedKeywordsDocString(schema: Record<string, any>): string {
+export function generateAdvancedKeywordsDocString(schema: Record<string, any>): string {
   const descriptions: Record<string, string> = {
     format: 'Expected format',
     pattern: 'The input should be a valid regular expression',
