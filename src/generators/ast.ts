@@ -28,6 +28,10 @@ export type TypeSpecificFields =
   | ObjectTypeFields
   | UnionTypeFields;
 
+export interface RefInfo {
+  __refName?: string;
+}
+
 // TODO: consider whether non-primitive types should have an enum.
 // For unions, potentially the enum should just be within the primitive type
 // and filtered down to the relevant enum values.
@@ -40,27 +44,29 @@ export type Enumable = {
 // Note: we don't support objects or arrays as enums, for simplification purposes.
 export type EnumValue = string | number | boolean | null;
 
-export type PrimitiveTypeFields = Enumable & {
-  type: Type.STRING | Type.INTEGER | Type.NUMBER | Type.BOOLEAN | Type.ANY;
-};
+export type PrimitiveTypeFields = Enumable &
+  RefInfo & {
+    type: Type.STRING | Type.INTEGER | Type.NUMBER | Type.BOOLEAN | Type.ANY;
+  };
 
-export type ArrayTypeFields = {
+export type ArrayTypeFields = RefInfo & {
   type: Type.ARRAY;
   // items specifies the type of any items in this array.
   items: TypeSpecificFields;
 };
 
-export type ObjectTypeFields = {
+export type ObjectTypeFields = RefInfo & {
   type: Type.OBJECT;
   // properties specifies all of the expected properties in this object.
   // Note: if an empty properties list is passed, all properties should be allowed.
   properties: Schema[];
 };
 
-export type UnionTypeFields = Enumable & {
-  type: Type.UNION;
-  types: TypeSpecificFields[];
-};
+export type UnionTypeFields = Enumable &
+  RefInfo & {
+    type: Type.UNION;
+    types: TypeSpecificFields[];
+  };
 
 // Type is a standardization of the various JSON Schema types. It removes the concept
 // of a "null" type, and introduces Unions and an explicit Any type. The Any type is
@@ -198,9 +204,89 @@ function copyAdvancedKeywords(from: JSONSchema7, to: Schema): void {
   }
 }
 
+type ResolvedTypes = {
+  [key: string]: Schema;
+};
+
+let definedTypes: ResolvedTypes = {};
+
+export interface CustomType {
+  name: string;
+  schema: Schema;
+}
+
+export const customTypesByEvent: Record<string, CustomType[]> = {};
+
+export function extractCustomTypes(schema: JSONSchema7, eventName?: string): ResolvedTypes {
+  definedTypes = {};
+
+  if (schema.$defs && eventName) {
+    const customTypes: CustomType[] = [];
+
+    // First pass: extract all custom types
+    for (const [name, defSchema] of Object.entries(schema.$defs)) {
+      if (typeof defSchema !== 'boolean') {
+        const customTypeSchema: JSONSchema7 = {
+          ...defSchema,
+          title: name,
+          description: defSchema.description || `Custom type for ${eventName}`,
+        };
+
+        definedTypes[`#/$defs/${name}`] = customTypeSchema as any;
+        definedTypes[name] = customTypeSchema as any;
+
+        customTypes.push({
+          name,
+          schema: customTypeSchema as any,
+        });
+      }
+    }
+
+    // Second pass: parse all custom types now that they're all defined
+    for (const customType of customTypes) {
+      const parsedSchema = parse(customType.schema as unknown as JSONSchema7, customType.name);
+      definedTypes[`#/$defs/${customType.name}`] = parsedSchema;
+      definedTypes[customType.name] = parsedSchema;
+      customType.schema = parsedSchema;
+    }
+
+    if (customTypes.length > 0) {
+      customTypesByEvent[eventName] = customTypes;
+    }
+  }
+
+  return definedTypes;
+}
+
 // parse transforms a JSON Schema into a standardized Schema.
 export function parse(raw: JSONSchema7, name?: string, isRequired?: boolean): Schema {
   // TODO: validate that the raw JSON Schema is a valid JSON Schema before attempting to parse it.
+
+  if (raw.$ref) {
+    const __refName = raw.$ref.split('/').pop() || '';
+    const refSchema = definedTypes[raw.$ref];
+
+    if (refSchema) {
+      const schema: Schema = {
+        ...refSchema,
+        name: name || raw.title || '',
+        __refName: __refName,
+      };
+
+      if (isRequired) {
+        schema.isRequired = true;
+      }
+
+      return schema;
+    } else {
+      return {
+        name: name || raw.title || '',
+        type: Type.ANY,
+        __refName: __refName,
+        isRequired: isRequired || false,
+      };
+    }
+  }
 
   // Parse the relevant fields from the JSON Schema based on the type.
   const typeSpecificFields = parseTypeSpecificFields(raw, getType(raw));
@@ -245,28 +331,37 @@ function parseTypeSpecificFields(raw: JSONSchema7, type: Type): TypeSpecificFiel
   } else if (type === Type.ARRAY) {
     const fields: ArrayTypeFields = { type, items: { type: Type.ANY } };
     if (typeof raw.items !== 'boolean' && raw.items !== undefined) {
-      // `items` can be a single schemas, or an array of schemas, so standardize on an array.
-      const definitions = raw.items instanceof Array ? raw.items : [raw.items];
-
-      // Convert from JSONSchema7Definition -> JSONSchema7
-      const schemas = definitions.filter((def) => typeof def !== 'boolean') as JSONSchema7[];
-
-      if (schemas.length === 1) {
-        const schema = schemas[0];
-
-        if (
-          schema.properties &&
-          Object.keys(schema.properties).length > 0 &&
-          schema.type === undefined
-        ) {
-          schema.type = ['array', 'object'];
+      // Check if items has a direct $ref
+      if ('$ref' in raw.items && typeof raw.items.$ref === 'string') {
+        const __refName = raw.items.$ref.split('/').pop() || '';
+        if (definedTypes[raw.items.$ref]) {
+          fields.items = {
+            ...parseTypeSpecificFields(raw.items, getType(raw.items)),
+            __refName: __refName,
+          };
         }
-        fields.items = parseTypeSpecificFields(schema, getType(schema));
-      } else if (schemas.length > 1) {
-        fields.items = {
-          type: Type.UNION,
-          types: schemas.map((schema) => parseTypeSpecificFields(schema, getType(schema))),
-        };
+      } else {
+        const definitions = raw.items instanceof Array ? raw.items : [raw.items];
+
+        const schemas = definitions.filter((def) => typeof def !== 'boolean') as JSONSchema7[];
+
+        if (schemas.length === 1) {
+          const schema = schemas[0];
+
+          if (
+            schema.properties &&
+            Object.keys(schema.properties).length > 0 &&
+            schema.type === undefined
+          ) {
+            schema.type = ['array', 'object'];
+          }
+          fields.items = parseTypeSpecificFields(schema, getType(schema));
+        } else if (schemas.length > 1) {
+          fields.items = {
+            type: Type.UNION,
+            types: schemas.map((schema) => parseTypeSpecificFields(schema, getType(schema))),
+          };
+        }
       }
     }
 
