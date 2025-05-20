@@ -1,317 +1,146 @@
-describe('Custom Type Handling', () => {
-  // Enum Type values from the actual AST
-  const TYPE = {
-    ANY: 0,
-    STRING: 1,
-    BOOLEAN: 2,
-    INTEGER: 3,
-    NUMBER: 4,
-    OBJECT: 5,
-    ARRAY: 6,
-    UNION: 7,
-  };
+import { parse, extractCustomTypes } from '../src/generators/ast';
+import * as fs from 'fs';
+import { promisify } from 'util';
+import { resolve } from 'path';
+import { customTypes } from './fixtures/asts';
+import { Type } from '../src/generators/ast';
 
-  // Simplified version of getTypeForSchema for testing
-  function getTypeForSchema(schema: any, customTypeRefs: Record<string, string> = {}): string {
-    // Handle direct references
-    if (schema.$ref) {
-      const __refName = schema.$ref.split('/').pop();
-      if (__refName) {
-        if (customTypeRefs[__refName]) {
-          return customTypeRefs[__refName];
-        }
-        return `CustomTypeDefs['${__refName}']`;
-      }
-      return 'any';
-    }
+const readFile = promisify(fs.readFile);
 
-    // Handle __refName property from RefInfo
-    if (schema.__refName) {
-      if (customTypeRefs[schema.__refName]) {
-        return customTypeRefs[schema.__refName];
-      }
-      return `CustomTypeDefs['${schema.__refName}']`;
-    }
+describe('Custom Types', () => {
+  let schema: any;
+  let definedTypes: any;
 
-    // Handle array types
-    if (schema.type === TYPE.ARRAY) {
-      if ('items' in schema && schema.items) {
-        if ('$ref' in schema.items && typeof schema.items.$ref === 'string') {
-          const __refName = schema.items.$ref.split('/').pop();
-          if (__refName) {
-            return `CustomTypeDefs['${__refName}'][]`;
-          }
-        }
-        const itemsType = getTypeForSchema(schema.items, customTypeRefs);
-        return `${itemsType}[]`;
-      }
-      return 'any[]';
-    }
-
-    // Handle object types
-    if (schema.type === TYPE.OBJECT) {
-      if (!schema.properties) {
-        return 'Record<string, any>';
-      }
-
-      const properties = Object.entries(schema.properties)
-        .map(([key, value]) => {
-          const propertySchema = value as any;
-          const isRequired = schema.required?.includes(key);
-          const type = getTypeForSchema(propertySchema, customTypeRefs);
-          return `${key}${isRequired ? '' : '?'}: ${type}`;
-        })
-        .join(';\n  ');
-
-      return `{\n  ${properties}\n}`;
-    }
-
-    // Handle enum types
-    if ('enum' in schema && schema.enum) {
-      // Special case for boolean enums
-      if (schema.type === TYPE.BOOLEAN) {
-        return 'boolean';
-      }
-
-      // For string and number enums, return the base type
-      // (in the real implementation, the enum will be processed separately)
-      if (schema.type === TYPE.STRING) {
-        return 'string';
-      }
-      if (schema.type === TYPE.NUMBER || schema.type === TYPE.INTEGER) {
-        return 'number';
-      }
-    }
-
-    // Handle primitive types
-    switch (schema.type) {
-      case TYPE.STRING:
-        return 'string';
-      case TYPE.NUMBER:
-      case TYPE.INTEGER:
-        return 'number';
-      case TYPE.BOOLEAN:
-        return 'boolean';
-      case TYPE.OBJECT:
-        return 'Record<string, any>';
-      case TYPE.ARRAY:
-        return 'any[]';
-      case TYPE.UNION:
-        return 'any';
-      case TYPE.ANY:
-      default:
-        return 'any';
-    }
-  }
-
-  describe('Boolean Enum Handling', () => {
-    test('boolean enum types should be treated as primitive boolean', () => {
-      // Create a schema with a boolean enum
-      const schema = {
-        type: TYPE.BOOLEAN,
-        enum: [true, false],
-      };
-
-      // Process the schema
-      const type = getTypeForSchema(schema);
-
-      // Boolean enum should be treated as a primitive boolean
-      expect(type).toBe('boolean');
+  beforeEach(async () => {
+    const schemaJSON = await readFile(resolve(__dirname, './fixtures/schemas/customTypes.json'), {
+      encoding: 'utf-8',
     });
+    schema = JSON.parse(schemaJSON);
+    definedTypes = extractCustomTypes(schema, 'Custom Types Fixture');
+  });
 
-    test('boolean enum with __refName should still return boolean', () => {
-      const schema = {
-        type: TYPE.BOOLEAN,
-        enum: [true, false],
-        __refName: 'bool-enum',
-      };
+  test('parses custom types schema', async () => {
+    expect.assertions(1);
+    const ast = parse(schema);
+    expect(ast).toEqual(customTypes);
+  });
 
-      const type = getTypeForSchema(schema);
+  test('extracts all custom types', () => {
+    expect(Object.keys(definedTypes)).toEqual([
+      '#/$defs/ct-boo',
+      'ct-boo',
+      '#/$defs/ct-string-enum',
+      'ct-string-enum',
+      '#/$defs/ct-number-enum',
+      'ct-number-enum',
+      '#/$defs/ct-object',
+      'ct-object',
+      '#/$defs/ct-array',
+      'ct-array',
+      '#/$defs/ct-nested',
+      'ct-nested',
+    ]);
+  });
 
-      // Even with a __refName, boolean enum should be a primitive boolean
-      expect(type).toBe("CustomTypeDefs['bool-enum']");
+  test('preserves enum values in custom types', () => {
+    const boolEnum = definedTypes['ct-boo'];
+    const stringEnum = definedTypes['ct-string-enum'];
+    const numberEnum = definedTypes['ct-number-enum'];
+
+    expect(boolEnum.enum).toEqual([true, false]);
+    expect(stringEnum.enum).toEqual(['type1', 'type2', 'type3']);
+    expect(numberEnum.enum).toEqual([1, 2, 3]);
+  });
+
+  test('preserves object structure in custom types', () => {
+    const objectType = definedTypes['ct-object'];
+
+    expect(objectType.type).toBe(Type.OBJECT);
+    expect(objectType.properties).toHaveLength(2);
+    expect(objectType.properties[0]).toEqual(
+      expect.objectContaining({
+        name: 'name',
+        type: Type.STRING,
+        isRequired: true,
+      }),
+    );
+    expect(objectType.properties[1]).toEqual(
+      expect.objectContaining({
+        name: 'value',
+        type: Type.NUMBER,
+      }),
+    );
+  });
+
+  test('handles nested custom type references', () => {
+    const nestedType = definedTypes['ct-nested'];
+
+    expect(nestedType.type).toBe(Type.OBJECT);
+    expect(nestedType.properties).toHaveLength(2);
+
+    // Check obj property references ct-object
+    const objProp = nestedType.properties[0];
+    expect(objProp.__refName).toBe('ct-object');
+
+    // Check enum property references ct-string-enum
+    const enumProp = nestedType.properties[1];
+    expect(enumProp.__refName).toBe('ct-string-enum');
+  });
+
+  test('preserves array type with item type', () => {
+    const arrayType = definedTypes['ct-array'];
+
+    expect(arrayType.type).toBe(Type.ARRAY);
+    expect(arrayType.items).toEqual(
+      expect.objectContaining({
+        type: Type.STRING,
+      }),
+    );
+  });
+
+  test('adds descriptions to custom types', () => {
+    const expectedDescription = 'Custom type for Custom Types Fixture';
+
+    Object.values(definedTypes).forEach((type: any) => {
+      if (!type.$ref) {
+        expect(type.description).toBe(expectedDescription);
+      }
     });
   });
 
-  describe('String and Number Enum Handling', () => {
-    test('string enum types should generate string type', () => {
-      const schema = {
-        type: TYPE.STRING,
-        enum: ['type1', 'type2', 'type3'],
-      };
+  test('preserves custom type references in nested properties', () => {
+    const nestedType = definedTypes['ct-nested'];
+    const objProp = nestedType.properties[0];
 
-      const type = getTypeForSchema(schema);
+    // Check that the referenced object type matches the original definition
+    expect(objProp.properties).toEqual(definedTypes['ct-object'].properties);
 
-      // String enum should be treated as a string
-      expect(type).toBe('string');
-    });
-
-    test('number enum types should generate number type', () => {
-      const schema = {
-        type: TYPE.NUMBER,
-        enum: [1, 2, 3],
-      };
-
-      const type = getTypeForSchema(schema);
-
-      // Number enum should be treated as a number
-      expect(type).toBe('number');
-    });
+    // Check that the referenced enum type matches the original definition
+    const enumProp = nestedType.properties[1];
+    expect(enumProp.enum).toEqual(definedTypes['ct-string-enum'].enum);
   });
 
-  describe('Custom Type References', () => {
-    test('object with __refName should use CustomTypeDefs reference', () => {
-      // Create a schema with a reference
-      const schema = {
-        __refName: 'custom-object',
-        type: TYPE.OBJECT,
-      };
+  test('handles required properties correctly', () => {
+    const objectType = definedTypes['ct-object'];
 
-      // Process the schema
-      const type = getTypeForSchema(schema);
+    // Check required property
+    const nameProperty = objectType.properties.find((p: any) => p.name === 'name');
+    expect(nameProperty.isRequired).toBe(true);
 
-      // Should use the reference from customTypeRefs
-      expect(type).toBe("CustomTypeDefs['custom-object']");
-    });
-
-    test('object with $ref should use CustomTypeDefs reference', () => {
-      const schema = {
-        $ref: '#/$defs/custom-object',
-      };
-
-      const type = getTypeForSchema(schema);
-
-      expect(type).toBe("CustomTypeDefs['custom-object']");
-    });
-
-    test('with customTypeRefs provided, should use that value', () => {
-      const customTypeRefs = {
-        'custom-object': 'CustomObject',
-      };
-
-      const schema = {
-        __refName: 'custom-object',
-        type: TYPE.OBJECT,
-      };
-
-      const type = getTypeForSchema(schema, customTypeRefs);
-
-      expect(type).toBe('CustomObject');
-    });
+    // Check optional property
+    const valueProperty = objectType.properties.find((p: any) => p.name === 'value');
+    expect(valueProperty.isRequired).toBeFalsy();
   });
 
-  describe('Array Type Handling', () => {
-    test('array of primitive types', () => {
-      const schema = {
-        type: TYPE.ARRAY,
-        items: {
-          type: TYPE.STRING,
-        },
-      };
+  test('maintains type consistency across references', () => {
+    const nestedType = definedTypes['ct-nested'];
+    const objProp = nestedType.properties[0];
+    const enumProp = nestedType.properties[1];
 
-      const type = getTypeForSchema(schema);
+    expect(objProp.type).toBe(Type.OBJECT);
+    expect(enumProp.type).toBe(Type.STRING);
 
-      expect(type).toBe('string[]');
-    });
-
-    test('array with items referencing custom type', () => {
-      const schema = {
-        type: TYPE.ARRAY,
-        items: {
-          $ref: '#/$defs/custom-type',
-        },
-      };
-
-      const type = getTypeForSchema(schema);
-
-      expect(type).toBe("CustomTypeDefs['custom-type'][]");
-    });
-  });
-
-  describe('Object Type Handling', () => {
-    test('empty object should return Record type', () => {
-      const schema = {
-        type: TYPE.OBJECT,
-      };
-
-      const type = getTypeForSchema(schema);
-
-      expect(type).toBe('Record<string, any>');
-    });
-
-    test('object with properties', () => {
-      const schema = {
-        type: TYPE.OBJECT,
-        properties: {
-          name: { type: TYPE.STRING },
-          age: { type: TYPE.NUMBER },
-          active: { type: TYPE.BOOLEAN },
-        },
-        required: ['name'],
-      };
-
-      const type = getTypeForSchema(schema);
-
-      // Should generate an inline object type
-      expect(type).toContain('name:');
-      expect(type).toContain('age?:');
-      expect(type).toContain('active?:');
-    });
-
-    test('object with property referencing custom type', () => {
-      const schema = {
-        type: TYPE.OBJECT,
-        properties: {
-          metadata: {
-            $ref: '#/$defs/metadata-type',
-          },
-        },
-      };
-
-      const type = getTypeForSchema(schema);
-
-      expect(type).toContain("CustomTypeDefs['metadata-type']");
-    });
-  });
-
-  describe('Nested Types and References', () => {
-    test('object with nested property using __refName', () => {
-      const schema = {
-        type: TYPE.OBJECT,
-        properties: {
-          nested: {
-            type: TYPE.OBJECT,
-            __refName: 'nested-type',
-          },
-        },
-      };
-
-      const type = getTypeForSchema(schema);
-
-      expect(type).toContain("CustomTypeDefs['nested-type']");
-    });
-
-    test('deeply nested references', () => {
-      const schema = {
-        type: TYPE.OBJECT,
-        properties: {
-          level1: {
-            type: TYPE.OBJECT,
-            properties: {
-              level2: {
-                type: TYPE.ARRAY,
-                items: {
-                  $ref: '#/$defs/deep-type',
-                },
-              },
-            },
-          },
-        },
-      };
-
-      const type = getTypeForSchema(schema);
-
-      expect(type).toContain("CustomTypeDefs['deep-type'][]");
-    });
+    const arrayType = definedTypes['ct-array'];
+    expect(arrayType.items.type).toBe(Type.STRING);
   });
 });
