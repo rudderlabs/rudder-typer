@@ -1,5 +1,12 @@
 # Cursor Rules for rudder-typer
-# These rules help maintain code quality and consistency
+# These rules help maintain code quality and consistency across the codebase
+
+# Core Principles:
+# - DRY (Don't Repeat Yourself): Avoid code duplication, extract common patterns
+# - Small, Focused Functions: Create single-purpose, composable functions
+# - Conservative Code Changes: Minimize changes to working code
+# - Type Safety: Maintain strong typing throughout
+# - Project Structure: Prefer core utility files over SDK-specific folders
 
 # Prefer using nullish coalescing (??) over logical OR (||) for default values
 rule "Use nullish coalescing operator" {
@@ -42,7 +49,7 @@ rule "Avoid any type" {
   pattern = ":\\s*any\\b"
   exclude = "(Record<string,\\s*any>|\\[]:\\s*any)"
   message = "Avoid using 'any' type when possible. Consider using a more specific type."
-  severity = "info"
+  severity = "warning"
 }
 
 # Prefer async/await over direct Promise handling
@@ -79,5 +86,26 @@ rule "Document complex functions" {
   pattern = "function\\s+\\w+[\\s\\S]{300,}"
   exclude = "/\\*\\*[\\s\\S]+\\*/"
   message = "Large functions should have JSDoc documentation"
+  severity = "info"
+}
+
+# Function length limit
+rule "Function length" {
+  pattern = "function\\s+\\w+[\\s\\S]{500,}"
+  message = "Function is too long. Consider breaking it into smaller, focused functions (aim for under 20 lines)"
+  severity = "warning"
+}
+
+# Enforce DRY principle
+rule "DRY code" {
+  pattern = "(export\\s+(?:const|function|class|interface)\\s+\\w+[\\s\\S]{50,})[\\s\\S]*\\1"
+  message = "Similar code pattern detected. Consider extracting common logic into a reusable function"
+  severity = "warning"
+}
+
+# Project structure - prefer core utilities
+rule "Core utility placement" {
+  pattern = "import\\s+{[^}]+}\\s+from\\s+['\"].*sdk.*['\"]"
+  message = "Consider if this functionality belongs in core utility files (gen.ts, ast.ts) rather than SDK-specific folders"
   severity = "info"
 } 
