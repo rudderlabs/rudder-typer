@@ -217,45 +217,52 @@ export interface CustomType {
 
 export const customTypesByEvent: Record<string, CustomType[]> = {};
 
-export function extractCustomTypes(schema: JSONSchema7, eventName?: string): ResolvedTypes {
+export function extractCustomTypes(schema: JSONSchema7, eventName?: string): void {
   definedTypes = {};
 
-  if (schema.$defs && eventName) {
-    const customTypes: CustomType[] = [];
-
-    // First pass: extract all custom types
-    for (const [name, defSchema] of Object.entries(schema.$defs)) {
-      if (typeof defSchema !== 'boolean') {
-        const customTypeSchema: JSONSchema7 = {
-          ...defSchema,
-          title: name,
-          description: defSchema.description || `Custom type for ${eventName}`,
-        };
-
-        definedTypes[`#/$defs/${name}`] = customTypeSchema as any;
-        definedTypes[name] = customTypeSchema as any;
-
-        customTypes.push({
-          name,
-          schema: customTypeSchema as any,
-        });
-      }
-    }
-
-    // Second pass: parse all custom types now that they're all defined
-    for (const customType of customTypes) {
-      const parsedSchema = parse(customType.schema as unknown as JSONSchema7, customType.name);
-      definedTypes[`#/$defs/${customType.name}`] = parsedSchema;
-      definedTypes[customType.name] = parsedSchema;
-      customType.schema = parsedSchema;
-    }
-
-    if (customTypes.length > 0) {
-      customTypesByEvent[eventName] = customTypes;
-    }
+  // Early return if no schema definitions or event name
+  if (!schema.$defs || !eventName) {
+    return;
   }
 
-  return definedTypes;
+  const customTypes: CustomType[] = [];
+
+  // First pass: extract all custom types
+  for (const [name, defSchema] of Object.entries(schema.$defs)) {
+    // Skip boolean schemas
+    if (typeof defSchema === 'boolean') {
+      continue;
+    }
+
+    const customTypeSchema: JSONSchema7 = {
+      ...defSchema,
+      title: name,
+      description: defSchema.description || `Custom type for ${eventName}`,
+    };
+
+    definedTypes[`#/$defs/${name}`] = customTypeSchema as any;
+    definedTypes[name] = customTypeSchema as any;
+
+    customTypes.push({
+      name,
+      schema: customTypeSchema as any,
+    });
+  }
+
+  // Early return if no custom types found
+  if (customTypes.length === 0) {
+    return;
+  }
+
+  // Second pass: parse all custom types now that they're all defined
+  for (const customType of customTypes) {
+    const parsedSchema = parse(customType.schema as unknown as JSONSchema7, customType.name);
+    definedTypes[`#/$defs/${customType.name}`] = parsedSchema;
+    definedTypes[customType.name] = parsedSchema;
+    customType.schema = parsedSchema;
+  }
+
+  customTypesByEvent[eventName] = customTypes;
 }
 
 // parse transforms a JSON Schema into a standardized Schema.
