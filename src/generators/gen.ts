@@ -8,6 +8,7 @@ import {
   getTraitsSchema,
   UnionTypeSchema,
   extractCustomTypes,
+  customTypesByEvent,
 } from './ast.js';
 import { javascript } from './javascript/index.js';
 import { objc } from './objc/index.js';
@@ -211,8 +212,11 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
     version: trackingPlan.version,
     trackCalls: trackingPlan.trackCalls.map((s) => {
       if (s.$defs) {
-        const eventName = s.title?.toString() ?? 'Track';
-        extractCustomTypes(s, eventName);
+        const eventName = s.title?.toString();
+        if (eventName) {
+          const customTypes = extractCustomTypes(s, eventName);
+          Object.assign(customTypesByEvent, customTypes);
+        }
       }
 
       const sanitizedSchema = {
@@ -227,7 +231,8 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
     screenCalls: trackingPlan.screenCalls.map((s) => {
       if (s.$defs) {
         const eventName = s.title?.toString() ?? 'Screen';
-        extractCustomTypes(s, eventName);
+        const customTypes = extractCustomTypes(s, eventName);
+        Object.assign(customTypesByEvent, customTypes);
       }
 
       const sanitizedSchema = {
@@ -242,7 +247,8 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
     pageCalls: trackingPlan.pageCalls.map((s) => {
       if (s.$defs) {
         const eventName = s.title?.toString() ?? 'Page';
-        extractCustomTypes(s, eventName);
+        const customTypes = extractCustomTypes(s, eventName);
+        Object.assign(customTypesByEvent, customTypes);
       }
 
       const sanitizedSchema = {
@@ -257,7 +263,8 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
     identifyCalls: trackingPlan.identifyCalls.map((s) => {
       if (s.$defs) {
         const eventName = s.title?.toString() ?? 'Identify';
-        extractCustomTypes(s, eventName);
+        const customTypes = extractCustomTypes(s, eventName);
+        Object.assign(customTypesByEvent, customTypes);
       }
 
       const sanitizedSchema = {
@@ -272,7 +279,8 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
     groupCalls: trackingPlan.groupCalls.map((s) => {
       if (s.$defs) {
         const eventName = s.title?.toString() ?? 'Group';
-        extractCustomTypes(s, eventName);
+        const customTypes = extractCustomTypes(s, eventName);
+        Object.assign(customTypesByEvent, customTypes);
       }
 
       const sanitizedSchema = {

@@ -217,12 +217,15 @@ export interface CustomType {
 
 export const customTypesByEvent: Record<string, CustomType[]> = {};
 
-export function extractCustomTypes(schema: JSONSchema7, eventName?: string): void {
+export function extractCustomTypes(
+  schema: JSONSchema7,
+  eventName: string,
+): Record<string, CustomType[]> {
   definedTypes = {};
 
-  // Early return if no schema definitions or event name
-  if (!schema.$defs || !eventName) {
-    return;
+  // Early return if no schema definitions
+  if (!schema.$defs) {
+    return {};
   }
 
   const customTypes: CustomType[] = [];
@@ -251,7 +254,7 @@ export function extractCustomTypes(schema: JSONSchema7, eventName?: string): voi
 
   // Early return if no custom types found
   if (customTypes.length === 0) {
-    return;
+    return {};
   }
 
   // Second pass: parse all custom types now that they're all defined
@@ -262,7 +265,7 @@ export function extractCustomTypes(schema: JSONSchema7, eventName?: string): voi
     customType.schema = parsedSchema;
   }
 
-  customTypesByEvent[eventName] = customTypes;
+  return { [eventName]: customTypes };
 }
 
 // parse transforms a JSON Schema into a standardized Schema.

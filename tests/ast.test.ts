@@ -1,4 +1,4 @@
-import { parse, extractCustomTypes } from '../src/generators/ast';
+import { parse, extractCustomTypes, customTypesByEvent } from '../src/generators/ast';
 import * as astFixtures from './fixtures/asts';
 import * as fs from 'fs';
 import { promisify } from 'util';
@@ -19,7 +19,8 @@ describe('AST', () => {
 
     // Extract custom types before parsing if they exist
     if (schema.$defs) {
-      extractCustomTypes(schema, schema.title);
+      const customTypes = extractCustomTypes(schema, schema.title);
+      Object.assign(customTypesByEvent, customTypes);
     }
 
     expect(parse(schema)).toEqual(ast);
