@@ -1,4 +1,4 @@
-import { parse, extractCustomTypes } from '../src/generators/ast';
+import { parse, extractCustomTypes, customTypesByEvent } from '../src/generators/ast';
 import * as fs from 'fs';
 import { promisify } from 'util';
 import { resolve } from 'path';
@@ -20,7 +20,8 @@ describe('Custom Types', () => {
       encoding: 'utf-8',
     });
     schema = JSON.parse(schemaJSON);
-    extractCustomTypes(schema, 'Custom Types Fixture');
+    const customTypes = extractCustomTypes(schema, 'Custom Types Fixture');
+    Object.assign(customTypesByEvent, customTypes);
   });
 
   test('parses custom types schema', async () => {
