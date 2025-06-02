@@ -1,4 +1,4 @@
-import { Type, Schema, customTypesByEvent, CustomType } from '../ast.js';
+import { Type, Schema, customTypesByEvent, CustomType, extractRefName } from '../ast.js';
 import * as prettier from 'prettier';
 import { transpileModule } from 'typescript';
 import { Language, SDK } from '../options.js';
@@ -318,7 +318,7 @@ function processCustomType(
       '$ref' in schema.items &&
       typeof schema.items.$ref === 'string'
     ) {
-      const refName = schema.items.$ref.split('/').pop();
+      const refName = extractRefName(schema.items.$ref);
       if (refName) {
         itemType = `CustomTypeDefs['${refName}']`;
       }
@@ -386,8 +386,9 @@ function processCustomType(
       let refName = '';
 
       if ('$ref' in prop && typeof prop.$ref === 'string') {
-        refName = prop.$ref.split('/').pop() || '';
-        if (refName) {
+        const extractedRefName = extractRefName(prop.$ref);
+        if (extractedRefName) {
+          refName = extractedRefName;
           propType = `CustomTypeDefs['${refName}']`;
         } else {
           propType = getTypeForSchema(prop, customTypeReferences);
@@ -500,10 +501,10 @@ export const javascript: Generator<
       });
     }
 
-    if ('__refName' in schema && schema.__refName) {
+    if ('_refName' in schema && schema._refName) {
       return conditionallyNullable(schema, {
         name: client.namer.escapeString(schema.name),
-        type: `CustomTypeDefs['${schema.__refName}']`,
+        type: `CustomTypeDefs['${schema._refName}']`,
       });
     }
 
@@ -538,10 +539,10 @@ export const javascript: Generator<
       });
     }
 
-    if ('__refName' in items && items.__refName) {
+    if ('_refName' in items && items._refName) {
       return conditionallyNullable(schema, {
         name: client.namer.escapeString(schema.name),
-        type: `CustomTypeDefs['${items.__refName}'][]`,
+        type: `CustomTypeDefs['${items._refName}'][]`,
       });
     }
 
@@ -624,10 +625,10 @@ export const javascript: Generator<
           };
         }
 
-        if ('__refName' in prop && prop.__refName) {
+        if ('_refName' in prop && prop._refName) {
           return {
             ...prop,
-            type: `CustomTypeDefs['${prop.__refName}']`,
+            type: `CustomTypeDefs['${prop._refName}']`,
           };
         }
 
@@ -869,15 +870,15 @@ const customTypeReferences: Record<string, string> = {};
 
 export function getTypeForSchema(schema: any, customTypes: Record<string, string>): string {
   if (schema.$ref) {
-    const __refName = schema.$ref.split('/').pop();
-    if (__refName) {
-      if (customTypes[__refName]) {
-        return customTypes[__refName];
+    const _refName = schema.$ref.split('/').pop();
+    if (_refName) {
+      if (customTypes[_refName]) {
+        return customTypes[_refName];
       }
-      if (customTypeReferences[__refName]) {
-        return customTypeReferences[__refName];
+      if (customTypeReferences[_refName]) {
+        return customTypeReferences[_refName];
       }
-      return `CustomTypeDefs['${__refName}']`;
+      return `CustomTypeDefs['${_refName}']`;
     }
     return 'any';
   }
@@ -885,9 +886,9 @@ export function getTypeForSchema(schema: any, customTypes: Record<string, string
   if (schema.type === 6 || (Array.isArray(schema.type) && schema.type.includes('array'))) {
     if ('items' in schema && schema.items) {
       if ('$ref' in schema.items && typeof schema.items.$ref === 'string') {
-        const __refName = schema.items.$ref.split('/').pop();
-        if (__refName) {
-          return `CustomTypeDefs['${__refName}'][]`;
+        const _refName = schema.items.$ref.split('/').pop();
+        if (_refName) {
+          return `CustomTypeDefs['${_refName}'][]`;
         }
       }
       const itemsType = getTypeForSchema(schema.items, customTypes);

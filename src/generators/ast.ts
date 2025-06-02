@@ -29,7 +29,7 @@ export type TypeSpecificFields =
   | UnionTypeFields;
 
 export interface RefInfo {
-  __refName?: string;
+  _refName?: string;
 }
 
 // TODO: consider whether non-primitive types should have an enum.
@@ -244,7 +244,6 @@ export function extractCustomTypes(
     };
 
     definedTypes[`#/$defs/${name}`] = customTypeSchema as any;
-    definedTypes[name] = customTypeSchema as any;
 
     customTypes.push({
       name,
@@ -261,7 +260,6 @@ export function extractCustomTypes(
   for (const customType of customTypes) {
     const parsedSchema = parse(customType.schema as unknown as JSONSchema7, customType.name);
     definedTypes[`#/$defs/${customType.name}`] = parsedSchema;
-    definedTypes[customType.name] = parsedSchema;
     customType.schema = parsedSchema;
   }
 
@@ -273,14 +271,14 @@ export function parse(raw: JSONSchema7, name?: string, isRequired?: boolean): Sc
   // TODO: validate that the raw JSON Schema is a valid JSON Schema before attempting to parse it.
 
   if (raw.$ref) {
-    const __refName = raw.$ref.split('/').pop() || '';
+    const _refName = extractRefName(raw.$ref) || '';
     const refSchema = definedTypes[raw.$ref];
 
     if (refSchema) {
       const schema: Schema = {
         ...refSchema,
         name: name || raw.title || '',
-        __refName: __refName,
+        _refName: _refName,
       };
 
       if (isRequired) {
@@ -292,7 +290,7 @@ export function parse(raw: JSONSchema7, name?: string, isRequired?: boolean): Sc
       return {
         name: name || raw.title || '',
         type: Type.ANY,
-        __refName: __refName,
+        _refName: _refName,
         isRequired: isRequired || false,
       };
     }
@@ -343,11 +341,11 @@ function parseTypeSpecificFields(raw: JSONSchema7, type: Type): TypeSpecificFiel
     if (typeof raw.items !== 'boolean' && raw.items !== undefined) {
       // Check if items has a direct $ref
       if ('$ref' in raw.items && typeof raw.items.$ref === 'string') {
-        const __refName = raw.items.$ref.split('/').pop() || '';
+        const _refName = extractRefName(raw.items.$ref) || '';
         if (definedTypes[raw.items.$ref]) {
           fields.items = {
             ...parseTypeSpecificFields(raw.items, getType(raw.items)),
-            __refName: __refName,
+            _refName: _refName,
           };
         }
       } else {
@@ -460,4 +458,10 @@ function getEnum(raw: JSONSchema7): EnumValue[] | undefined {
   ) as EnumValue[];
 
   return enm;
+}
+
+export function extractRefName(ref: string): string | null {
+  const defsPattern = /^#\/\$defs\/(.+)$/;
+  const match = ref.match(defsPattern);
+  return match ? match[1] : null;
 }

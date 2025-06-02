@@ -69,11 +69,11 @@ describe('Custom Types', () => {
 
     // Check obj property references ct-object
     const objProp = nestedSchema.properties[0];
-    expect(objProp.__refName).toBe('ct-object');
+    expect(objProp._refName).toBe('ct-object');
 
     // Check enum property references ct-string-enum
     const enumProp = nestedSchema.properties[1];
-    expect(enumProp.__refName).toBe('ct-string-enum');
+    expect(enumProp._refName).toBe('ct-string-enum');
   });
 
   test('handles array type with item type', () => {
