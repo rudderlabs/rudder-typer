@@ -51,9 +51,6 @@ type CustomTypeRef = {
 type JavaScriptRootContext = {
   isBrowser: boolean;
   useProxy: boolean;
-  customTypes?: (CustomTypeEnum | CustomTypeInterface)[];
-  customTypeRefs?: CustomTypeRef[];
-  eventName?: string;
 };
 
 // Represents a single exposed track() call.
@@ -135,108 +132,6 @@ function findRefInSchema(schema: JSONSchema7 | any): { refPath: string; propName
   return null;
 }
 
-type TypeDependency = {
-  name: string;
-  dependencies: Set<string>;
-  processed: boolean;
-};
-
-const processedTypeCache: Record<string, string> = {};
-
-// Map of type dependencies
-const typeDependencyMap: Record<string, TypeDependency> = {};
-
-// Extracts dependencies from a schema
-function extractTypeDependencies(schema: Schema): Set<string> {
-  const dependencies = new Set<string>();
-
-  if ('$ref' in schema && typeof schema.$ref === 'string') {
-    const refName = schema.$ref.split('/').pop();
-    if (refName) {
-      dependencies.add(refName);
-    }
-  }
-
-  if (schema.type === Type.ARRAY && 'items' in schema && schema.items) {
-    if ('$ref' in schema.items && typeof schema.items.$ref === 'string') {
-      const refName = schema.items.$ref.split('/').pop();
-      if (refName) {
-        dependencies.add(refName);
-      }
-    }
-
-    const itemDeps = extractTypeDependencies(schema.items as any);
-    itemDeps.forEach((dep) => dependencies.add(dep));
-  }
-
-  if (schema.type === Type.OBJECT && 'properties' in schema) {
-    for (const prop of schema.properties) {
-      if ('$ref' in prop && typeof prop.$ref === 'string') {
-        const refName = prop.$ref.split('/').pop();
-        if (refName) {
-          dependencies.add(refName);
-        }
-      }
-
-      const propDeps = extractTypeDependencies(prop);
-      propDeps.forEach((dep) => dependencies.add(dep));
-    }
-  }
-
-  return dependencies;
-}
-
-// Get types in dependency order
-function getOrderedTypes(customTypes: CustomType[]): CustomType[] {
-  Object.keys(typeDependencyMap).forEach((key) => delete typeDependencyMap[key]);
-
-  // First pass: build dependency map
-  for (const customType of customTypes) {
-    const { name, schema } = customType;
-    const dependencies = extractTypeDependencies(schema);
-
-    typeDependencyMap[name] = {
-      name,
-      dependencies,
-      processed: false,
-    };
-  }
-
-  // Second pass: order types by dependencies
-  const orderedTypes: CustomType[] = [];
-  const remainingTypes = [...customTypes];
-
-  let progress = true;
-  while (remainingTypes.length > 0 && progress) {
-    progress = false;
-
-    for (let i = remainingTypes.length - 1; i >= 0; i--) {
-      const type = remainingTypes[i];
-      const deps = typeDependencyMap[type.name]?.dependencies || new Set();
-
-      const allDepsProcessed = Array.from(deps).every(
-        (dep) => !typeDependencyMap[dep] || typeDependencyMap[dep].processed,
-      );
-
-      if (allDepsProcessed) {
-        const [removed] = remainingTypes.splice(i, 1);
-        orderedTypes.push(removed);
-        if (typeDependencyMap[removed.name]) {
-          typeDependencyMap[removed.name].processed = true;
-        }
-        progress = true;
-      }
-    }
-  }
-
-  // Handle remaining types (circular dependencies)
-  if (remainingTypes.length > 0) {
-    orderedTypes.push(...remainingTypes);
-  }
-
-  return orderedTypes;
-}
-
 function processCustomType(
   customType: CustomType,
   customTypeReferences: Record<string, string>,
@@ -245,20 +140,6 @@ function processCustomType(
   typeRef: CustomTypeRef | null;
 } {
   const { name, schema } = customType;
-
-  if (processedTypeCache[name]) {
-    return {
-      typeDetails: null,
-      typeRef: {
-        name,
-        type: processedTypeCache[name],
-        isRequired: !!schema.isRequired,
-        isNullable: !!schema.isNullable,
-        description: schema.description,
-        advancedKeywordsDoc: generateAdvancedKeywordsDocString(schema),
-      },
-    };
-  }
 
   let typeDetails: CustomTypeEnum | CustomTypeInterface | null = null;
   let typeRef: CustomTypeRef | null = null;
@@ -429,7 +310,6 @@ function processCustomType(
     advancedKeywordsDoc: generateAdvancedKeywordsDocString(schema),
   };
 
-  processedTypeCache[name] = typeValue;
   customTypeReferences[name] = typeValue;
 
   return { typeDetails, typeRef };
@@ -681,7 +561,6 @@ export const javascript: Generator<
   }),
   generateRoot: async (client, context) => {
     Object.keys(customTypeReferences).forEach((key) => delete customTypeReferences[key]);
-    Object.keys(processedTypeCache).forEach((key) => delete processedTypeCache[key]);
 
     const allCustomTypes: (CustomTypeEnum | CustomTypeInterface)[] = [];
     const allCustomTypeRefs: CustomTypeRef[] = [];
@@ -693,10 +572,8 @@ export const javascript: Generator<
       }
     }
 
-    const orderedTypes = getOrderedTypes(allTypes);
-
     // First pass - process all custom types to build the reference lookup
-    for (const customType of orderedTypes) {
+    for (const customType of allTypes) {
       if (customTypeReferences[customType.name]) {
         continue;
       }

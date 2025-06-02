@@ -68,6 +68,34 @@ export type TrackingPlan = {
   }[];
 };
 
+export type CustomTypeEnum = {
+  typeName: string;
+  isEnum: true;
+  enumValues: { key: string; value: string }[];
+};
+
+export type CustomTypeInterface = {
+  typeName: string;
+  isEnum: false;
+  properties: {
+    name: string;
+    type: string;
+    isRequired: boolean;
+    isNullable: boolean;
+    description?: string;
+    advancedKeywordsDoc?: string;
+  }[];
+};
+
+export type CustomTypeRef = {
+  name: string;
+  type: string;
+  isRequired: boolean;
+  isNullable: boolean;
+  description?: string;
+  advancedKeywordsDoc?: string;
+};
+
 export type BaseRootContext<
   T extends Record<string, unknown>,
   O extends Record<string, unknown>,
@@ -93,6 +121,8 @@ export type BaseRootContext<
     rawEventName: string;
     properties?: (P & BasePropertyContext)[];
   })[];
+  customTypes?: (CustomTypeEnum | CustomTypeInterface)[];
+  customTypeRefs?: CustomTypeRef[];
 };
 
 export type BaseTrackCallContext<P extends Record<string, unknown>> = {
