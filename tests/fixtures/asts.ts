@@ -304,27 +304,27 @@ export const customTypes: Schema = {
       name: 'booleanEnum',
       type: Type.BOOLEAN,
       enum: [true, false],
-      __refName: 'ct-boo',
+      _refName: 'ct-boo',
       description: 'Custom type for Custom Types Fixture',
     },
     {
       name: 'stringEnum',
       type: Type.STRING,
       enum: ['type1', 'type2', 'type3'],
-      __refName: 'ct-string-enum',
+      _refName: 'ct-string-enum',
       description: 'Custom type for Custom Types Fixture',
     },
     {
       name: 'numberEnum',
       type: Type.NUMBER,
       enum: [1, 2, 3],
-      __refName: 'ct-number-enum',
+      _refName: 'ct-number-enum',
       description: 'Custom type for Custom Types Fixture',
     },
     {
       name: 'objectType',
       type: Type.OBJECT,
-      __refName: 'ct-object',
+      _refName: 'ct-object',
       description: 'Custom type for Custom Types Fixture',
       properties: [
         {
@@ -341,7 +341,7 @@ export const customTypes: Schema = {
     {
       name: 'arrayType',
       type: Type.ARRAY,
-      __refName: 'ct-array',
+      _refName: 'ct-array',
       description: 'Custom type for Custom Types Fixture',
       items: {
         type: Type.STRING,
@@ -350,13 +350,13 @@ export const customTypes: Schema = {
     {
       name: 'nestedType',
       type: Type.OBJECT,
-      __refName: 'ct-nested',
+      _refName: 'ct-nested',
       description: 'Custom type for Custom Types Fixture',
       properties: [
         {
           name: 'obj',
           type: Type.OBJECT,
-          __refName: 'ct-object',
+          _refName: 'ct-object',
           description: 'Custom type for Custom Types Fixture',
           properties: [
             {
@@ -373,7 +373,7 @@ export const customTypes: Schema = {
         {
           name: 'enum',
           type: Type.STRING,
-          __refName: 'ct-string-enum',
+          _refName: 'ct-string-enum',
           description: 'Custom type for Custom Types Fixture',
           enum: ['type1', 'type2', 'type3'],
         },
