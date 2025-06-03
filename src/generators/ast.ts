@@ -342,20 +342,28 @@ function parseTypeSpecificFields(raw: JSONSchema7, type: Type): TypeSpecificFiel
       // Check if items has a direct $ref
       if ('$ref' in raw.items && typeof raw.items.$ref === 'string') {
         const _refName = extractRefName(raw.items.$ref) || '';
-        if (definedTypes[raw.items.$ref]) {
+        const refSchema = definedTypes[raw.items.$ref];
+        if (refSchema) {
+          // Handle primitive types directly
+          if (
+            refSchema.type === Type.STRING ||
+            refSchema.type === Type.NUMBER ||
+            refSchema.type === Type.INTEGER ||
+            refSchema.type === Type.BOOLEAN
+          ) {
+            fields.items = { type: refSchema.type };
+            return fields;
+          }
           fields.items = {
             ...parseTypeSpecificFields(raw.items, getType(raw.items)),
-            _refName: _refName,
+            _refName,
           };
         }
       } else {
         const definitions = raw.items instanceof Array ? raw.items : [raw.items];
-
         const schemas = definitions.filter((def) => typeof def !== 'boolean') as JSONSchema7[];
-
         if (schemas.length === 1) {
           const schema = schemas[0];
-
           if (
             schema.properties &&
             Object.keys(schema.properties).length > 0 &&
@@ -372,7 +380,6 @@ function parseTypeSpecificFields(raw: JSONSchema7, type: Type): TypeSpecificFiel
         }
       }
     }
-
     return fields;
   } else if (type === Type.UNION) {
     const fields: UnionTypeFields = { type, types: [] };
