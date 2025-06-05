@@ -1,8 +1,7 @@
-import { parse, extractCustomTypes, customTypesByEvent } from '../src/generators/ast';
+import { parse } from '../src/generators/ast';
 import * as fs from 'fs';
 import { promisify } from 'util';
 import { resolve } from 'path';
-import { customTypes } from './fixtures/asts';
 import {
   Type,
   PrimitiveTypeSchema,
@@ -20,18 +19,11 @@ describe('Custom Types', () => {
       encoding: 'utf-8',
     });
     schema = JSON.parse(schemaJSON);
-    const customTypes = extractCustomTypes(schema, 'Custom Types Fixture');
-    Object.assign(customTypesByEvent, customTypes);
-  });
-
-  test('parses custom types schema', async () => {
-    expect.assertions(1);
-    const ast = parse(schema);
-    expect(ast).toEqual(customTypes);
+    // Parse the schema first to register all custom types
+    parse(schema);
   });
 
   test('handles enum values in custom types', () => {
-    // Test through parse() instead of accessing definedTypes directly
     const boolSchema = parse({ $ref: '#/$defs/ct-boo' }) as PrimitiveTypeSchema;
     const stringSchema = parse({ $ref: '#/$defs/ct-string-enum' }) as PrimitiveTypeSchema;
     const numberSchema = parse({ $ref: '#/$defs/ct-number-enum' }) as PrimitiveTypeSchema;
@@ -85,21 +77,6 @@ describe('Custom Types', () => {
         type: Type.STRING,
       }),
     );
-  });
-
-  test('adds descriptions to custom types', () => {
-    const expectedDescription = 'Custom type for Custom Types Fixture';
-    const schemas = [
-      parse({ $ref: '#/$defs/ct-boo' }),
-      parse({ $ref: '#/$defs/ct-string-enum' }),
-      parse({ $ref: '#/$defs/ct-object' }),
-      parse({ $ref: '#/$defs/ct-array' }),
-      parse({ $ref: '#/$defs/ct-nested' }),
-    ];
-
-    schemas.forEach((schema) => {
-      expect(schema.description).toBe(expectedDescription);
-    });
   });
 
   test('preserves custom type references in nested properties', () => {

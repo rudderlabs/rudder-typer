@@ -354,18 +354,6 @@ export const javascript: Generator<
     };
   },
   generatePrimitive: async (client, schema) => {
-    // Check if this property has a $ref
-    if ('$ref' in schema && typeof schema.$ref === 'string') {
-      const ref = schema.$ref;
-      if (ref.startsWith('#/$defs/')) {
-        const typeName = ref.replace('#/$defs/', '');
-        return conditionallyNullable(schema, {
-          name: client.namer.escapeString(schema.name),
-          type: `CustomTypeDefs['${typeName}']`,
-        });
-      }
-    }
-
     // Use the recursive function to find references in nested properties
     const ref = findRefInSchema(schema);
     if (ref) {
