@@ -338,6 +338,7 @@ function parseTypeSpecificFields(raw: JSONSchema7, type: Type): TypeSpecificFiel
           ...parse(raw.items, undefined, false),
           _refName,
         };
+        fields._refName = _refName;
       } else {
         const definitions = raw.items instanceof Array ? raw.items : [raw.items];
         const schemas = definitions.filter((def) => typeof def !== 'boolean') as JSONSchema7[];
