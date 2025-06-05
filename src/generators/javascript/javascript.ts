@@ -326,15 +326,6 @@ export const javascript: Generator<
     };
   },
   generatePrimitive: async (client, schema) => {
-    // Use the recursive function to find references in nested properties
-
-    // if ('_refName' in schema && schema._refName) {
-    //   return conditionallyNullable(schema, {
-    //     name: client.namer.escapeString(schema.name),
-    //     type: `CustomTypeDefs['${schema._refName}']`,
-    //   });
-    // }
-
     let type = 'any';
     let hasEnum = false;
 
