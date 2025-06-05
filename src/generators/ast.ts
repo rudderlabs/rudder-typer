@@ -276,30 +276,16 @@ export function parse(raw: JSONSchema7, name?: string, isRequired?: boolean): Sc
   }
 
   // Handle $ref types
+  let _refName = '';
   if (raw.$ref) {
-    const _refName = extractRefName(raw.$ref) || '';
-    const refSchema = definedTypes[raw.$ref];
+    _refName = extractRefName(raw.$ref) || '';
 
-    if (refSchema) {
-      const schema: Schema = {
-        ...refSchema,
-        name: name || raw.title || '',
-        _refName: _refName,
-      };
-
-      if (isRequired) {
-        schema.isRequired = true;
-      }
-
-      return schema;
-    } else {
-      return {
-        name: name || raw.title || '',
-        type: Type.ANY,
-        _refName: _refName,
-        isRequired: isRequired || false,
-      };
-    }
+    return {
+      type: Type.ANY,
+      isRequired: isRequired || false,
+      name: name || raw.title || '',
+      _refName: _refName,
+    };
   }
 
   // Parse the relevant fields from the JSON Schema based on the type.
@@ -307,6 +293,7 @@ export function parse(raw: JSONSchema7, name?: string, isRequired?: boolean): Sc
 
   const schema: Schema = {
     name: name || raw.title || '',
+    _refName,
     ...typeSpecificFields,
   };
 
@@ -345,26 +332,12 @@ function parseTypeSpecificFields(raw: JSONSchema7, type: Type): TypeSpecificFiel
   } else if (type === Type.ARRAY) {
     const fields: ArrayTypeFields = { type, items: { type: Type.ANY } };
     if (typeof raw.items !== 'boolean' && raw.items !== undefined) {
-      // Check if items has a direct $ref
       if ('$ref' in raw.items && typeof raw.items.$ref === 'string') {
         const _refName = extractRefName(raw.items.$ref) || '';
-        const refSchema = definedTypes[raw.items.$ref];
-        if (refSchema) {
-          // Handle primitive types directly
-          if (
-            refSchema.type === Type.STRING ||
-            refSchema.type === Type.NUMBER ||
-            refSchema.type === Type.INTEGER ||
-            refSchema.type === Type.BOOLEAN
-          ) {
-            fields.items = { type: refSchema.type };
-            return fields;
-          }
-          fields.items = {
-            ...parseTypeSpecificFields(raw.items, getType(raw.items)),
-            _refName,
-          };
-        }
+        fields.items = {
+          ...parse(raw.items, undefined, false),
+          _refName,
+        };
       } else {
         const definitions = raw.items instanceof Array ? raw.items : [raw.items];
         const schemas = definitions.filter((def) => typeof def !== 'boolean') as JSONSchema7[];

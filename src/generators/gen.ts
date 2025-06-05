@@ -121,6 +121,7 @@ export type BaseRootContext<
   })[];
   customTypes?: (CustomTypeEnum | CustomTypeInterface)[];
   customTypeRefs?: CustomTypeRef[];
+  customTypeRefsByName?: { [name: string]: CustomTypeRef };
 };
 
 export type BaseTrackCallContext<P extends Record<string, unknown>> = {

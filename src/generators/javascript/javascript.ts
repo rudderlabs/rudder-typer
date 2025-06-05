@@ -58,6 +58,8 @@ type JavaScriptPropertyContext = {
   enumName?: string;
   // The formatted enum values
   enumValues?: any;
+  // The ref name of this property.
+  _refName?: string;
 };
 
 function escapeAndFormatString(value: any): string {
@@ -104,7 +106,21 @@ function processArrayType(
   let itemType = 'any';
 
   if ('items' in schema && schema.items) {
-    if ('$ref' in schema.items && typeof schema.items.$ref === 'string') {
+    if ((schema.items as { _refName?: string })._refName) {
+      const refName = (schema.items as { _refName: string })._refName;
+      // Only return the typeRef, do not generate a typeDetails/interface
+      return {
+        typeDetails: null,
+        typeRef: {
+          name,
+          type: `CustomTypeDefs['${refName}'][]`,
+          isRequired: !!schema.isRequired,
+          isNullable: !!schema.isNullable,
+          description: schema.description,
+          advancedKeywordsDoc: generateAdvancedKeywordsDocString(schema),
+        },
+      };
+    } else if ('$ref' in schema.items && typeof schema.items.$ref === 'string') {
       const refName = extractRefName(schema.items.$ref);
       if (refName) {
         itemType = typeMap[refName] || `CustomTypeDefs['${refName}']`;
@@ -312,12 +328,12 @@ export const javascript: Generator<
   generatePrimitive: async (client, schema) => {
     // Use the recursive function to find references in nested properties
 
-    if ('_refName' in schema && schema._refName) {
-      return conditionallyNullable(schema, {
-        name: client.namer.escapeString(schema.name),
-        type: `CustomTypeDefs['${schema._refName}']`,
-      });
-    }
+    // if ('_refName' in schema && schema._refName) {
+    //   return conditionallyNullable(schema, {
+    //     name: client.namer.escapeString(schema.name),
+    //     type: `CustomTypeDefs['${schema._refName}']`,
+    //   });
+    // }
 
     let type = 'any';
     let hasEnum = false;
@@ -491,6 +507,10 @@ export const javascript: Generator<
     if (allCustomTypes.length > 0 || allCustomTypeRefs.length > 0) {
       context.customTypes = allCustomTypes;
       context.customTypeRefs = allCustomTypeRefs;
+      // Add customTypeRefsByName for Handlebars lookup
+      context.customTypeRefsByName = Object.fromEntries(
+        allCustomTypeRefs.map((ref) => [ref.name, ref]),
+      );
     }
 
     await client.generateFile<JavaScriptRootContext>(
@@ -564,6 +584,7 @@ function conditionallyNullable(
 ): JavaScriptPropertyContext {
   return {
     ...property,
+    _refName: schema._refName,
     type: !!schema.isNullable && !hasEnum ? `${property.type} | null` : property.type,
     hasEnum: !!hasEnum,
     enumName: sanitizeEnumKey(schema.name) + '_' + getEnumPropertyTypes(schema),
@@ -628,7 +649,9 @@ export function getTypeForSchema(
       })
       .join(';\n  ');
 
-    return `{\n  ${properties}\n}`;
+    return `{
+  ${properties}
+}`;
   }
 
   switch (schema.type) {
