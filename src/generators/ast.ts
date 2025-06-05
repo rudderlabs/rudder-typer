@@ -258,7 +258,13 @@ export function extractCustomTypes(schema: JSONSchema7): Record<string, CustomTy
     customType.schema = parsedSchema;
   }
 
-  return { customTypes };
+  return customTypes.reduce(
+    (acc, ct) => {
+      acc[ct.name] = [ct];
+      return acc;
+    },
+    {} as Record<string, CustomType[]>,
+  );
 }
 
 // parse transforms a JSON Schema into a standardized Schema.
