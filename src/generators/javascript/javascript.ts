@@ -16,7 +16,6 @@ import { toTarget, toModule } from './targets.js';
 import { registerPartial } from '../../templates.js';
 import lodash from 'lodash';
 import { getEnumPropertyTypes, sanitizeEnumKey, sanitizeKey } from '../utils.js';
-import { JSONSchema7 } from 'json-schema';
 
 const { camelCase, upperFirst } = lodash;
 
@@ -60,49 +59,6 @@ type JavaScriptPropertyContext = {
   // The formatted enum values
   enumValues?: any;
 };
-
-function findRefInSchema(schema: JSONSchema7 | any): { refPath: string; propName: string } | null {
-  if ('$ref' in schema && typeof schema.$ref === 'string' && schema.$ref.startsWith('#/$defs/')) {
-    return { refPath: schema.$ref, propName: schema.name || '' };
-  }
-
-  if ('properties' in schema && schema.properties && typeof schema.properties === 'object') {
-    for (const [propName, propSchema] of Object.entries(schema.properties)) {
-      if (propSchema && typeof propSchema === 'object') {
-        if (
-          '$ref' in propSchema &&
-          typeof propSchema.$ref === 'string' &&
-          propSchema.$ref.startsWith('#/$defs/')
-        ) {
-          return { refPath: propSchema.$ref, propName };
-        }
-
-        const result = findRefInSchema(propSchema);
-        if (result) return result;
-      }
-    }
-
-    if ('properties' in schema.properties && typeof schema.properties.properties === 'object') {
-      const innerProps = schema.properties.properties;
-      for (const [propName, propSchema] of Object.entries(innerProps)) {
-        if (propSchema && typeof propSchema === 'object') {
-          if (
-            '$ref' in propSchema &&
-            typeof propSchema.$ref === 'string' &&
-            propSchema.$ref.startsWith('#/$defs/')
-          ) {
-            return { refPath: propSchema.$ref, propName };
-          }
-
-          const result = findRefInSchema(propSchema);
-          if (result) return result;
-        }
-      }
-    }
-  }
-
-  return null;
-}
 
 function escapeAndFormatString(value: any): string {
   return `'${value.toString().replace(/'/g, "\\'").trim()}'`;
@@ -355,14 +311,6 @@ export const javascript: Generator<
   },
   generatePrimitive: async (client, schema) => {
     // Use the recursive function to find references in nested properties
-    const ref = findRefInSchema(schema);
-    if (ref) {
-      const typeName = ref.refPath.replace('#/$defs/', '');
-      return conditionallyNullable(schema, {
-        name: client.namer.escapeString(ref.propName),
-        type: `CustomTypeDefs['${typeName}']`,
-      });
-    }
 
     if ('_refName' in schema && schema._refName) {
       return conditionallyNullable(schema, {
@@ -394,30 +342,6 @@ export const javascript: Generator<
     );
   },
   generateArray: async (client, schema, items) => {
-    if ('$ref' in items && typeof items.$ref === 'string' && items.$ref.startsWith('#/$defs/')) {
-      const typeName = items.$ref.replace('#/$defs/', '');
-      return conditionallyNullable(schema, {
-        name: client.namer.escapeString(schema.name),
-        type: `CustomTypeDefs['${typeName}'][]`,
-      });
-    }
-
-    if ('_refName' in items && items._refName) {
-      return conditionallyNullable(schema, {
-        name: client.namer.escapeString(schema.name),
-        type: `CustomTypeDefs['${items._refName}'][]`,
-      });
-    }
-
-    const ref = findRefInSchema(items);
-    if (ref) {
-      const typeName = ref.refPath.replace('#/$defs/', '');
-      return conditionallyNullable(schema, {
-        name: client.namer.escapeString(schema.name),
-        type: `CustomTypeDefs['${typeName}'][]`,
-      });
-    }
-
     return conditionallyNullable(schema, {
       name: client.namer.escapeString(schema.name),
       type: `${items.type}[]`,
@@ -432,101 +356,21 @@ export const javascript: Generator<
           type: 'Record<string, any>',
         }),
       };
-    } else {
-      // Otherwise generate an interface to represent this object.
-      const interfaceName = client.namer.register(
-        schema.identifierName || schema.name,
-        'interface',
-        {
-          transform: (name: string) => upperFirst(camelCase(name)),
-        },
-      );
-
-      if (
-        '$ref' in schema &&
-        typeof schema.$ref === 'string' &&
-        schema.$ref.startsWith('#/$defs/')
-      ) {
-        const typeName = schema.$ref.replace('#/$defs/', '');
-        return {
-          property: conditionallyNullable(schema, {
-            name: client.namer.escapeString(schema.name),
-            type: `CustomTypeDefs['${typeName}']`,
-          }),
-        };
-      }
-
-      if (
-        properties.length === 1 &&
-        'properties' in schema &&
-        Array.isArray(schema.properties) &&
-        schema.properties.length === 1
-      ) {
-        const prop = schema.properties[0];
-
-        if ('$ref' in prop) {
-          console.log(`Property has $ref: ${prop.$ref}`);
-        }
-
-        if ('$ref' in prop && typeof prop.$ref === 'string' && prop.$ref.startsWith('#/$defs/')) {
-          const refTypeName = prop.$ref.replace('#/$defs/', '');
-          return {
-            property: conditionallyNullable(schema, {
-              name: client.namer.escapeString(schema.name),
-              type: `CustomTypeDefs['${refTypeName}']`,
-            }),
-          };
-        }
-      }
-
-      const processedProperties = properties.map((prop) => {
-        if ('$ref' in prop && typeof prop.$ref === 'string' && prop.$ref.startsWith('#/$defs/')) {
-          const typeName = prop.$ref.replace('#/$defs/', '');
-          return {
-            ...prop,
-            type: `CustomTypeDefs['${typeName}']`,
-          };
-        }
-
-        if ('_refName' in prop && prop._refName) {
-          return {
-            ...prop,
-            type: `CustomTypeDefs['${prop._refName}']`,
-          };
-        }
-
-        if ('properties' in prop && prop.properties && typeof prop.properties === 'object') {
-          const innerProps = prop.properties;
-          if (innerProps && typeof innerProps === 'object') {
-            for (const [propName, propSchema] of Object.entries(innerProps)) {
-              if (propSchema && typeof propSchema === 'object' && '$ref' in propSchema) {
-                const ref = propSchema.$ref;
-                if (typeof ref === 'string' && ref.startsWith('#/$defs/')) {
-                  const typeName = ref.replace('#/$defs/', '');
-                  return {
-                    ...prop,
-                    name: propName,
-                    type: `CustomTypeDefs['${typeName}']`,
-                  };
-                }
-              }
-            }
-          }
-        }
-        return prop;
-      });
-
-      return {
-        property: conditionallyNullable(schema, {
-          name: client.namer.escapeString(schema.name),
-          type: interfaceName,
-        }),
-        object: {
-          name: interfaceName,
-          properties: processedProperties,
-        },
-      };
     }
+    // Otherwise generate an interface to represent this object.
+    const interfaceName = client.namer.register(schema.identifierName || schema.name, 'interface', {
+      transform: (name: string) => upperFirst(camelCase(name)),
+    });
+
+    return {
+      property: conditionallyNullable(schema, {
+        name: client.namer.escapeString(schema.name),
+        type: interfaceName,
+      }),
+      object: {
+        name: interfaceName,
+      },
+    };
   },
   generateUnion: async (client, schema, types) =>
     conditionallyNullable(

@@ -182,7 +182,7 @@ export interface CustomTypeDefs {
 		{{#if advancedKeywordsDoc}}
 		{{advancedKeywordsDoc}}
 		{{/if}}
-		'{{name}}'{{#unless isRequired}}?{{/unless}}: {{#if hasEnum}}{{enumName}}{{else}}{{#if type}}{{#if (eq type "CustomTypeDefs")}}{{type}}{{else}}{{#if (lookup ../customTypeRefs name)}}CustomTypeDefs['{{name}}']{{else}}{{type}}{{/if}}{{/if}}{{else}}any{{/if}}{{/if}}
+		'{{name}}'{{#unless isRequired}}?{{/unless}}: {{#if hasEnum}}{{enumName}}{{else}}{{#if type}}{{#if (lookup ../customTypeRefs name)}}CustomTypeDefs['{{name}}']{{else}}{{type}}{{/if}}{{else}}any{{/if}}{{/if}}
 		{{/each}}
 	}
 {{/if}}
