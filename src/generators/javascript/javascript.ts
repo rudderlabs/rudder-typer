@@ -8,6 +8,9 @@ import {
   type File,
   generateAdvancedKeywordsDocString,
   BaseObjectContext,
+  CustomTypeEnum,
+  CustomTypeInterface,
+  CustomTypeRef,
 } from '../gen.js';
 import { toTarget, toModule } from './targets.js';
 import { registerPartial } from '../../templates.js';
@@ -16,37 +19,6 @@ import { getEnumPropertyTypes, sanitizeEnumKey, sanitizeKey } from '../utils.js'
 import { JSONSchema7 } from 'json-schema';
 
 const { camelCase, upperFirst } = lodash;
-
-// These contexts are what will be passed to Handlebars to perform rendering.
-// Everything in these contexts should be properly sanitized.
-
-type CustomTypeEnum = {
-  typeName: string;
-  isEnum: true;
-  enumValues: { key: string; value: string }[];
-};
-
-type CustomTypeInterface = {
-  typeName: string;
-  isEnum: false;
-  properties: {
-    name: string;
-    type: string;
-    isRequired: boolean;
-    isNullable: boolean;
-    description?: string;
-    advancedKeywordsDoc?: string;
-  }[];
-};
-
-type CustomTypeRef = {
-  name: string;
-  type: string;
-  isRequired: boolean;
-  isNullable: boolean;
-  description?: string;
-  advancedKeywordsDoc?: string;
-};
 
 type JavaScriptRootContext = {
   isBrowser: boolean;
@@ -140,25 +112,27 @@ function escapeAndFormatString(value: any): string {
 function processEnumType(name: string, schema: Schema): CustomTypeEnum | null {
   if (!('enum' in schema) || !schema.enum) return null;
 
-  const typeName = upperFirst(camelCase(name));
   let enumValues;
-
-  if (schema.type === Type.STRING) {
-    enumValues = schema.enum.map((value: any) => ({
-      key: `S_${sanitizeKey(value)}`,
-      value: escapeAndFormatString(value),
-    }));
-  } else if (schema.type === Type.NUMBER || schema.type === Type.INTEGER) {
-    enumValues = schema.enum.map((value: any) => ({
-      key: `N_${sanitizeKey(value)}`,
-      value: `${value}`,
-    }));
-  } else {
-    return null;
+  switch (schema.type) {
+    case Type.STRING:
+      enumValues = schema.enum.map((value: any) => ({
+        key: `S_${sanitizeKey(value)}`,
+        value: escapeAndFormatString(value),
+      }));
+      break;
+    case Type.NUMBER:
+    case Type.INTEGER:
+      enumValues = schema.enum.map((value: any) => ({
+        key: `N_${sanitizeKey(value)}`,
+        value: `${value}`,
+      }));
+      break;
+    default:
+      return null;
   }
 
   return {
-    typeName,
+    typeName: upperFirst(camelCase(name)),
     isEnum: true,
     enumValues,
   };
