@@ -208,7 +208,7 @@ type ResolvedTypes = {
   [key: string]: Schema;
 };
 
-let definedTypes: ResolvedTypes = {};
+const definedTypes: ResolvedTypes = {};
 
 export interface CustomType {
   name: string;
@@ -217,12 +217,7 @@ export interface CustomType {
 
 export const customTypesByEvent: Record<string, CustomType[]> = {};
 
-export function extractCustomTypes(
-  schema: JSONSchema7,
-  eventName: string,
-): Record<string, CustomType[]> {
-  definedTypes = {};
-
+export function extractCustomTypes(schema: JSONSchema7): Record<string, CustomType[]> {
   // Early return if no schema definitions
   if (!schema.$defs) {
     return {};
@@ -240,7 +235,7 @@ export function extractCustomTypes(
     const customTypeSchema: JSONSchema7 = {
       ...defSchema,
       title: name,
-      description: defSchema.description || `Custom type for ${eventName}`,
+      description: defSchema.description,
     };
 
     definedTypes[`#/$defs/${name}`] = customTypeSchema as any;
@@ -263,13 +258,18 @@ export function extractCustomTypes(
     customType.schema = parsedSchema;
   }
 
-  return { [eventName]: customTypes };
+  return { customTypes };
 }
 
 // parse transforms a JSON Schema into a standardized Schema.
 export function parse(raw: JSONSchema7, name?: string, isRequired?: boolean): Schema {
-  // TODO: validate that the raw JSON Schema is a valid JSON Schema before attempting to parse it.
+  // Handle $defs first
+  if (raw.$defs) {
+    const customTypes = extractCustomTypes(raw);
+    Object.assign(customTypesByEvent, customTypes);
+  }
 
+  // Handle $ref types
   if (raw.$ref) {
     const _refName = extractRefName(raw.$ref) || '';
     const refSchema = definedTypes[raw.$ref];

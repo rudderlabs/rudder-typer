@@ -7,8 +7,6 @@ import {
   PrimitiveTypeSchema,
   getTraitsSchema,
   UnionTypeSchema,
-  extractCustomTypes,
-  customTypesByEvent,
 } from './ast.js';
 import { javascript } from './javascript/index.js';
 import { objc } from './objc/index.js';
@@ -241,14 +239,6 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
     id: trackingPlan.id,
     version: trackingPlan.version,
     trackCalls: trackingPlan.trackCalls.map((s) => {
-      if (s.$defs) {
-        const eventName = s.title?.toString();
-        if (eventName) {
-          const customTypes = extractCustomTypes(s, eventName);
-          Object.assign(customTypesByEvent, customTypes);
-        }
-      }
-
       const sanitizedSchema = {
         $schema: 'http://json-schema.org/draft-07/schema#',
         ...s,
@@ -259,12 +249,6 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
       };
     }),
     screenCalls: trackingPlan.screenCalls.map((s) => {
-      if (s.$defs) {
-        const eventName = s.title?.toString() ?? 'Screen';
-        const customTypes = extractCustomTypes(s, eventName);
-        Object.assign(customTypesByEvent, customTypes);
-      }
-
       const sanitizedSchema = {
         $schema: 'http://json-schema.org/draft-07/schema#',
         ...s,
@@ -275,12 +259,6 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
       };
     }),
     pageCalls: trackingPlan.pageCalls.map((s) => {
-      if (s.$defs) {
-        const eventName = s.title?.toString() ?? 'Page';
-        const customTypes = extractCustomTypes(s, eventName);
-        Object.assign(customTypesByEvent, customTypes);
-      }
-
       const sanitizedSchema = {
         $schema: 'http://json-schema.org/draft-07/schema#',
         ...s,
@@ -291,12 +269,6 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
       };
     }),
     identifyCalls: trackingPlan.identifyCalls.map((s) => {
-      if (s.$defs) {
-        const eventName = s.title?.toString() ?? 'Identify';
-        const customTypes = extractCustomTypes(s, eventName);
-        Object.assign(customTypesByEvent, customTypes);
-      }
-
       const sanitizedSchema = {
         $schema: 'http://json-schema.org/draft-07/schema#',
         ...s,
@@ -307,12 +279,6 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
       };
     }),
     groupCalls: trackingPlan.groupCalls.map((s) => {
-      if (s.$defs) {
-        const eventName = s.title?.toString() ?? 'Group';
-        const customTypes = extractCustomTypes(s, eventName);
-        Object.assign(customTypesByEvent, customTypes);
-      }
-
       const sanitizedSchema = {
         $schema: 'http://json-schema.org/draft-07/schema#',
         ...s,
