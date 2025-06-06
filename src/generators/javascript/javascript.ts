@@ -70,24 +70,24 @@ function escapeAndFormatString(value: any): string {
 function processEnumType(name: string, schema: Schema): CustomTypeEnum | null {
   if (!('enum' in schema) || !schema.enum) return null;
 
-  let enumValues;
-  switch (schema.type) {
-    case Type.STRING:
-      enumValues = schema.enum.map((value: any) => ({
+  const isStringEnum = schema.type === Type.STRING;
+  const isNumberEnum = schema.type === Type.NUMBER || schema.type === Type.INTEGER;
+
+  if (!isStringEnum && !isNumberEnum) return null;
+
+  const enumValues = schema.enum.map((value: any) => {
+    if (isStringEnum) {
+      return {
         key: `S_${sanitizeKey(value)}`,
         value: escapeAndFormatString(value),
-      }));
-      break;
-    case Type.NUMBER:
-    case Type.INTEGER:
-      enumValues = schema.enum.map((value: any) => ({
+      };
+    } else {
+      return {
         key: `N_${sanitizeKey(value)}`,
         value: `${value}`,
-      }));
-      break;
-    default:
-      return null;
-  }
+      };
+    }
+  });
 
   return {
     typeName: upperFirst(camelCase(name)),
@@ -103,78 +103,49 @@ function processArrayType(
   customTypeReferences: Record<string, string>,
   typeMap: Record<string, string>,
 ): { typeDetails: CustomTypeInterface | null; typeRef: CustomTypeRef } {
-  let itemType = 'any';
+  const createTypeRef = (type: string) => ({
+    name,
+    type,
+    isRequired: !!schema.isRequired,
+    isNullable: !!schema.isNullable,
+    description: schema.description,
+    advancedKeywordsDoc: generateAdvancedKeywordsDocString(schema),
+  });
 
-  if ('items' in schema && schema.items) {
-    if ((schema.items as { _refName?: string })._refName) {
-      const refName = (schema.items as { _refName: string })._refName;
-      // Only return the typeRef, do not generate a typeDetails/interface
-      return {
-        typeDetails: null,
-        typeRef: {
-          name,
-          type: `CustomTypeDefs['${refName}'][]`,
-          isRequired: !!schema.isRequired,
-          isNullable: !!schema.isNullable,
-          description: schema.description,
-          advancedKeywordsDoc: generateAdvancedKeywordsDocString(schema),
-        },
-      };
-    } else if ('$ref' in schema.items && typeof schema.items.$ref === 'string') {
-      const refName = extractRefName(schema.items.$ref);
-      if (refName) {
-        itemType = typeMap[refName] || `CustomTypeDefs['${refName}']`;
-      }
-    } else {
-      itemType = getTypeForSchema(schema.items, customTypeReferences, typeMap);
-    }
-  }
-
-  const typeName = upperFirst(camelCase(name));
-  const typeValue = `${itemType}[]`;
-
-  // For simple types, just return the type reference
-  if (
-    itemType === 'string' ||
-    itemType === 'number' ||
-    itemType === 'boolean' ||
-    itemType === 'any'
-  ) {
+  // Default to any[] if no items specified
+  if (!('items' in schema) || !schema.items) {
     return {
       typeDetails: null,
-      typeRef: {
-        name,
-        type: typeValue,
-        isRequired: !!schema.isRequired,
-        isNullable: !!schema.isNullable,
-        description: schema.description,
-        advancedKeywordsDoc: generateAdvancedKeywordsDocString(schema),
-      },
+      typeRef: createTypeRef('any[]'),
     };
   }
 
-  // For complex types, create a type definition
+  // Handle arrays with custom type references
+  const itemRefName = (schema.items as { _refName?: string })._refName;
+  if (itemRefName) {
+    return {
+      typeDetails: null,
+      typeRef: createTypeRef(`CustomTypeDefs['${itemRefName}'][]`),
+    };
+  }
+
+  // Handle arrays with $ref items
+  if ('$ref' in schema.items && typeof schema.items.$ref === 'string') {
+    const refName = extractRefName(schema.items.$ref);
+    if (refName) {
+      const itemType = typeMap[refName] || `CustomTypeDefs['${refName}']`;
+      return {
+        typeDetails: null,
+        typeRef: createTypeRef(`${itemType}[]`),
+      };
+    }
+  }
+
+  // Handle arrays with other item types
+  const itemType = getTypeForSchema(schema.items, customTypeReferences, typeMap);
   return {
-    typeDetails: {
-      typeName,
-      isEnum: false,
-      properties: [
-        {
-          name: 'item',
-          type: itemType,
-          isRequired: true,
-          isNullable: false,
-        },
-      ],
-    },
-    typeRef: {
-      name,
-      type: typeValue,
-      isRequired: !!schema.isRequired,
-      isNullable: !!schema.isNullable,
-      description: schema.description,
-      advancedKeywordsDoc: generateAdvancedKeywordsDocString(schema),
-    },
+    typeDetails: null,
+    typeRef: createTypeRef(`${itemType}[]`),
   };
 }
 
@@ -186,29 +157,23 @@ function processObjectType(
   typeMap: Record<string, string>,
 ): { typeDetails: CustomTypeInterface; typeRef: CustomTypeRef } {
   const typeName = upperFirst(camelCase(name));
-  const properties = (schema as any).properties.map((prop: Schema) => {
-    let propType = '';
 
+  const getPropertyType = (prop: Schema): string => {
     if ('$ref' in prop && typeof prop.$ref === 'string') {
       const refName = extractRefName(prop.$ref);
-      if (refName) {
-        propType = typeMap[refName] || `CustomTypeDefs['${refName}']`;
-      } else {
-        propType = getTypeForSchema(prop, customTypeReferences, typeMap);
-      }
-    } else {
-      propType = getTypeForSchema(prop, customTypeReferences, typeMap);
+      return refName ? typeMap[refName] || `CustomTypeDefs['${refName}']` : 'any';
     }
+    return getTypeForSchema(prop, customTypeReferences, typeMap);
+  };
 
-    return {
-      name: prop.name,
-      type: propType,
-      isRequired: !!prop.isRequired,
-      isNullable: !!prop.isNullable,
-      description: prop.description,
-      advancedKeywordsDoc: generateAdvancedKeywordsDocString(prop),
-    };
-  });
+  const properties = (schema as any).properties.map((prop: Schema) => ({
+    name: prop.name,
+    type: getPropertyType(prop),
+    isRequired: !!prop.isRequired,
+    isNullable: !!prop.isNullable,
+    description: prop.description,
+    advancedKeywordsDoc: generateAdvancedKeywordsDocString(prop),
+  }));
 
   return {
     typeDetails: {
@@ -237,32 +202,39 @@ function processCustomType(
 } {
   const { name, schema } = customType;
 
+  const createSimpleTypeRef = (type: string) => ({
+    name,
+    type,
+    isRequired: !!schema.isRequired,
+    isNullable: !!schema.isNullable,
+    description: schema.description,
+    advancedKeywordsDoc: generateAdvancedKeywordsDocString(schema),
+  });
+
   // Handle enum types
-  if (schema.type === Type.STRING || schema.type === Type.NUMBER || schema.type === Type.INTEGER) {
+  const isEnumType =
+    schema.type === Type.STRING || schema.type === Type.NUMBER || schema.type === Type.INTEGER;
+  if (isEnumType) {
     const enumType = processEnumType(name, schema);
     if (enumType) {
-      const typeRef = {
-        name,
-        type: enumType.typeName,
-        isRequired: !!schema.isRequired,
-        isNullable: !!schema.isNullable,
-        description: schema.description,
-        advancedKeywordsDoc: generateAdvancedKeywordsDocString(schema),
-      };
+      const typeRef = createSimpleTypeRef(enumType.typeName);
       customTypeReferences[name] = enumType.typeName;
       return { typeDetails: enumType, typeRef };
     }
   }
 
   // Handle array types
-  if (schema.type === Type.ARRAY || (Array.isArray(schema.type) && schema.type.includes('array'))) {
+  const isArrayType =
+    schema.type === Type.ARRAY || (Array.isArray(schema.type) && schema.type.includes('array'));
+  if (isArrayType) {
     const result = processArrayType(name, schema, customTypeReferences, typeMap);
     customTypeReferences[name] = result.typeRef.type;
     return result;
   }
 
   // Handle object types
-  if (schema.type === Type.OBJECT && 'properties' in schema) {
+  const isObjectType = schema.type === Type.OBJECT && 'properties' in schema;
+  if (isObjectType) {
     const result = processObjectType(name, schema, customTypeReferences, typeMap);
     customTypeReferences[name] = result.typeRef.type;
     return result;
@@ -270,14 +242,7 @@ function processCustomType(
 
   // Handle simple types
   const typeValue = getTypeForSchema(schema, customTypeReferences, typeMap);
-  const typeRef = {
-    name,
-    type: typeValue,
-    isRequired: !!schema.isRequired,
-    isNullable: !!schema.isNullable,
-    description: schema.description,
-    advancedKeywordsDoc: generateAdvancedKeywordsDocString(schema),
-  };
+  const typeRef = createSimpleTypeRef(typeValue);
   customTypeReferences[name] = typeValue;
   return { typeDetails: null, typeRef };
 }
@@ -607,6 +572,15 @@ export function getTypeForSchema(
       return `CustomTypeDefs['${_refName}']`;
     }
     return 'any';
+  }
+
+  // Handle enum types
+  if (
+    schema.enum &&
+    (schema.type === Type.STRING || schema.type === Type.NUMBER || schema.type === Type.INTEGER)
+  ) {
+    const enumName = sanitizeEnumKey(schema.name) + '_' + getEnumPropertyTypes(schema);
+    return enumName;
   }
 
   if (schema.type === Type.ARRAY || (Array.isArray(schema.type) && schema.type.includes('array'))) {
