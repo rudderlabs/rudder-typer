@@ -19,6 +19,59 @@ import { getEnumPropertyTypes, sanitizeEnumKey, sanitizeKey } from '../utils.js'
 
 const { camelCase, upperFirst } = lodash;
 
+// Helper class for improved type checking readability
+class SchemaTypeChecker {
+  static isEnumType(schema: Schema): boolean {
+    return (
+      schema.type === Type.STRING || schema.type === Type.NUMBER || schema.type === Type.INTEGER
+    );
+  }
+
+  static isArrayType(schema: Schema): boolean {
+    return (
+      schema.type === Type.ARRAY || (Array.isArray(schema.type) && schema.type.includes('array'))
+    );
+  }
+
+  static isObjectType(schema: Schema): boolean {
+    return schema.type === Type.OBJECT && 'properties' in schema;
+  }
+
+  static isStringEnumType(schema: Schema): boolean {
+    return schema.type === Type.STRING && 'enum' in schema && !!schema.enum;
+  }
+
+  static isNumberEnumType(schema: Schema): boolean {
+    return (
+      (schema.type === Type.NUMBER || schema.type === Type.INTEGER) &&
+      'enum' in schema &&
+      !!schema.enum
+    );
+  }
+
+  static hasEnumValues(schema: Schema): boolean {
+    return 'enum' in schema && !!schema.enum;
+  }
+
+  static hasItemsProperty(schema: Schema): boolean {
+    return 'items' in schema && !!schema.items;
+  }
+
+  static hasRefProperty(obj: any): boolean {
+    return '$ref' in obj && typeof obj.$ref === 'string';
+  }
+
+  static hasRefName(obj: any): boolean {
+    return obj && typeof obj._refName === 'string';
+  }
+
+  static isStringType(schema: Schema): boolean {
+    return (
+      schema.type === Type.STRING || (Array.isArray(schema.type) && schema.type.includes('string'))
+    );
+  }
+}
+
 type JavaScriptRootContext = {
   isBrowser: boolean;
   useProxy: boolean;
@@ -68,14 +121,14 @@ function escapeAndFormatString(value: any): string {
 
 // Helper function to handle enum types
 function processEnumType(name: string, schema: Schema): CustomTypeEnum | null {
-  if (!('enum' in schema) || !schema.enum) return null;
+  if (!SchemaTypeChecker.hasEnumValues(schema)) return null;
 
-  const isStringEnum = schema.type === Type.STRING;
-  const isNumberEnum = schema.type === Type.NUMBER || schema.type === Type.INTEGER;
+  const isStringEnum = SchemaTypeChecker.isStringEnumType(schema);
+  const isNumberEnum = SchemaTypeChecker.isNumberEnumType(schema);
 
   if (!isStringEnum && !isNumberEnum) return null;
 
-  const enumValues = schema.enum.map((value: any) => {
+  const enumValues = (schema as any).enum.map((value: any) => {
     if (isStringEnum) {
       return {
         key: `S_${sanitizeKey(value)}`,
@@ -160,14 +213,14 @@ function processObjectType(
   const typeName = upperFirst(camelCase(name));
 
   const getPropertyType = (prop: Schema): string => {
-    if ('$ref' in prop && typeof prop.$ref === 'string') {
-      const refName = extractRefName(prop.$ref);
+    // Handle ref properties
+    if ('$ref' in prop) {
+      const refName = extractRefName((prop as any).$ref);
       return refName ? typeMap[refName] || `CustomTypeDefs['${refName}']` : 'any';
     }
 
-    // Handle enum properties - reuse existing enum logic
-    if ('enum' in prop && prop.enum) {
-      const typeString = prop.type === Type.STRING ? 'String' : 'Number';
+    if (SchemaTypeChecker.hasEnumValues(prop)) {
+      const typeString = SchemaTypeChecker.isStringEnumType(prop) ? 'String' : 'Number';
       const enumName = `${upperFirst(camelCase(prop.name))}_${typeString}`;
       const enumType = processEnumType(enumName, prop);
       if (enumType) {
@@ -223,10 +276,7 @@ function processCustomType(
     advancedKeywordsDoc: generateAdvancedKeywordsDocString(schema),
   });
 
-  // Handle enum types
-  const isEnumType =
-    schema.type === Type.STRING || schema.type === Type.NUMBER || schema.type === Type.INTEGER;
-  if (isEnumType) {
+  if (SchemaTypeChecker.isEnumType(schema)) {
     const enumType = processEnumType(name, schema);
     if (enumType) {
       const typeRef = createSimpleTypeRef(enumType.typeName);
@@ -235,18 +285,13 @@ function processCustomType(
     }
   }
 
-  // Handle array types
-  const isArrayType =
-    schema.type === Type.ARRAY || (Array.isArray(schema.type) && schema.type.includes('array'));
-  if (isArrayType) {
+  if (SchemaTypeChecker.isArrayType(schema)) {
     const result = processArrayType(name, schema, customTypeReferences, typeMap);
     customTypeReferences[name] = result.typeRef.type;
     return result;
   }
 
-  // Handle object types
-  const isObjectType = schema.type === Type.OBJECT && 'properties' in schema;
-  if (isObjectType) {
+  if (SchemaTypeChecker.isObjectType(schema)) {
     const tempNestedEnums: CustomTypeEnum[] = [];
     const result = processObjectType(name, schema, customTypeReferences, typeMap, tempNestedEnums);
     customTypeReferences[name] = result.typeRef.type;
@@ -596,24 +641,17 @@ export function getTypeForSchema(
     return 'any';
   }
 
-  // Handle enum types
-  if (
-    schema.enum &&
-    (schema.type === Type.STRING || schema.type === Type.NUMBER || schema.type === Type.INTEGER)
-  ) {
+  if (schema.enum && SchemaTypeChecker.isEnumType(schema)) {
     const enumName = sanitizeEnumKey(schema.name) + '_' + getEnumPropertyTypes(schema);
     return enumName;
   }
 
-  if (schema.type === Type.ARRAY || (Array.isArray(schema.type) && schema.type.includes('array'))) {
+  if (SchemaTypeChecker.isArrayType(schema)) {
     if ('items' in schema && schema.items) {
-      if ('$ref' in schema.items && typeof schema.items.$ref === 'string') {
+      if (SchemaTypeChecker.hasRefProperty(schema.items)) {
         const _refName = extractRefName(schema.items.$ref);
         if (_refName) {
-          if (
-            schema.items.type === Type.STRING ||
-            (Array.isArray(schema.items.type) && schema.items.type.includes('string'))
-          ) {
+          if (SchemaTypeChecker.isStringType(schema.items)) {
             return 'string[]';
           }
           return `CustomTypeDefs['${_refName}'][]`;
