@@ -74,7 +74,6 @@ export type CustomTypeEnum = {
 
 export type CustomTypeInterface = {
   typeName: string;
-  isEnum: false;
   properties: {
     name: string;
     type: string;

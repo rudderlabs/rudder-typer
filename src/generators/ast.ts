@@ -336,7 +336,6 @@ function parseTypeSpecificFields(raw: JSONSchema7, type: Type): TypeSpecificFiel
         const _refName = extractRefName(raw.items.$ref) || '';
         fields.items = {
           ...parse(raw.items, undefined, false),
-          _refName,
         };
         fields._refName = _refName;
       } else {
@@ -441,7 +440,7 @@ function getEnum(raw: JSONSchema7): EnumValue[] | undefined {
   }
 
   const enm = raw.enum.filter(
-    (val) => ['boolean', 'number', 'string'].includes(typeof val) || val === null,
+    (val) => ['boolean', 'number', 'string', 'integer'].includes(typeof val) || val === null,
   ) as EnumValue[];
 
   return enm;

@@ -90,7 +90,7 @@ function processEnumType(name: string, schema: Schema): CustomTypeEnum | null {
   });
 
   return {
-    typeName: upperFirst(camelCase(name)),
+    typeName: name.includes('_') ? name : upperFirst(camelCase(name)),
     isEnum: true,
     enumValues,
   };
@@ -155,6 +155,7 @@ function processObjectType(
   schema: Schema,
   customTypeReferences: Record<string, string>,
   typeMap: Record<string, string>,
+  nestedEnums: CustomTypeEnum[],
 ): { typeDetails: CustomTypeInterface; typeRef: CustomTypeRef } {
   const typeName = upperFirst(camelCase(name));
 
@@ -163,6 +164,18 @@ function processObjectType(
       const refName = extractRefName(prop.$ref);
       return refName ? typeMap[refName] || `CustomTypeDefs['${refName}']` : 'any';
     }
+
+    // Handle enum properties - reuse existing enum logic
+    if ('enum' in prop && prop.enum) {
+      const typeString = prop.type === Type.STRING ? 'String' : 'Number';
+      const enumName = `${upperFirst(camelCase(prop.name))}_${typeString}`;
+      const enumType = processEnumType(enumName, prop);
+      if (enumType) {
+        nestedEnums.push(enumType);
+        return enumType.typeName;
+      }
+    }
+
     return getTypeForSchema(prop, customTypeReferences, typeMap);
   };
 
@@ -178,7 +191,6 @@ function processObjectType(
   return {
     typeDetails: {
       typeName,
-      isEnum: false,
       properties,
     },
     typeRef: {
@@ -235,7 +247,8 @@ function processCustomType(
   // Handle object types
   const isObjectType = schema.type === Type.OBJECT && 'properties' in schema;
   if (isObjectType) {
-    const result = processObjectType(name, schema, customTypeReferences, typeMap);
+    const tempNestedEnums: CustomTypeEnum[] = [];
+    const result = processObjectType(name, schema, customTypeReferences, typeMap, tempNestedEnums);
     customTypeReferences[name] = result.typeRef.type;
     return result;
   }
@@ -364,6 +377,7 @@ export const javascript: Generator<
     const allCustomTypes: (CustomTypeEnum | CustomTypeInterface)[] = [];
     const allCustomTypeRefs: CustomTypeRef[] = [];
     const typeMap: Record<string, string> = {};
+    const nestedEnums: CustomTypeEnum[] = [];
 
     const allTypes: CustomType[] = [];
     for (const customTypes of Object.values(customTypesByEvent)) {
@@ -388,7 +402,21 @@ export const javascript: Generator<
         allCustomTypeRefs.push(typeRef);
         typeMap[customType.name] = typeRef.type;
       }
+
+      // Process nested enums from object properties
+      if (customType.schema.type === Type.OBJECT && 'properties' in customType.schema) {
+        processObjectType(
+          customType.name,
+          customType.schema,
+          customTypeReferences,
+          typeMap,
+          nestedEnums,
+        );
+      }
     }
+
+    // Add collected nested enums to allCustomTypes
+    allCustomTypes.push(...nestedEnums);
 
     // Second pass - for each interface property that references a custom type,
     for (const obj of context.objects || []) {
