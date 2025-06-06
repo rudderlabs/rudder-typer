@@ -100,9 +100,4 @@ export async function registerStandardHelpers(): Promise<void> {
 
     return lines.map((line) => indentation + line).join('\n');
   });
-
-  Handlebars.registerHelper('lookupRef', function (refs, key) {
-    console.log('key', key);
-    return refs?.[key];
-  });
 }
