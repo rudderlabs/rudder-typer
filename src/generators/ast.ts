@@ -57,6 +57,7 @@ export type ArrayTypeFields = RefInfo & {
 
 export type ObjectTypeFields = RefInfo & {
   type: Type.OBJECT;
+  defs?: Record<string, Schema>;
   // properties specifies all of the expected properties in this object.
   // Note: if an empty properties list is passed, all properties should be allowed.
   properties: Schema[];
@@ -110,10 +111,14 @@ export function getPropertiesSchema(event: Schema): ObjectTypeSchema {
 
   // Events should always be a type="object" at the root, anything
   // else would not match on a RudderStack analytics event.
+  let defs: Record<string, Schema> | undefined = undefined;
+
   if (event.type === Type.OBJECT) {
     const propertiesSchema = event.properties.find(
       (schema: Schema): boolean => schema.name === 'properties',
     );
+    // Pickup the defs from the event schema if type Object
+    defs = event.defs;
     // The schema representing `.properties` in the RudderStack analytics
     // event should also always be an object.
     if (propertiesSchema && propertiesSchema.type === Type.OBJECT) {
@@ -132,6 +137,7 @@ export function getPropertiesSchema(event: Schema): ObjectTypeSchema {
     ...(properties || {}),
     isRequired: properties ? !!properties.isRequired : false,
     isNullable: false,
+    defs: defs,
     // Use the event's name and description when generating an interface
     // to represent these properties.
     name: event.name,
@@ -204,98 +210,19 @@ function copyAdvancedKeywords(from: JSONSchema7, to: Schema): void {
   }
 }
 
-type ResolvedTypes = {
-  [key: string]: Schema;
-};
-
-const definedTypes: ResolvedTypes = {};
-
-export interface CustomType {
-  name: string;
-  schema: Schema;
-}
-
-export const customTypesByEvent: Record<string, CustomType[]> = {};
-
-export function extractCustomTypes(schema: JSONSchema7): Record<string, CustomType[]> {
-  // Early return if no schema definitions
-  if (!schema.$defs) {
-    return {};
-  }
-
-  const customTypes: CustomType[] = [];
-
-  // First pass: extract all custom types
-  for (const [name, defSchema] of Object.entries(schema.$defs)) {
-    // Skip boolean schemas
-    if (typeof defSchema === 'boolean') {
-      continue;
-    }
-
-    const customTypeSchema: JSONSchema7 = {
-      ...defSchema,
-      title: name,
-      description: defSchema.description,
-    };
-
-    definedTypes[`#/$defs/${name}`] = customTypeSchema as any;
-
-    customTypes.push({
-      name,
-      schema: customTypeSchema as any,
-    });
-  }
-
-  // Early return if no custom types found
-  if (customTypes.length === 0) {
-    return {};
-  }
-
-  // Second pass: parse all custom types now that they're all defined
-  for (const customType of customTypes) {
-    const parsedSchema = parse(customType.schema as unknown as JSONSchema7, customType.name);
-    definedTypes[`#/$defs/${customType.name}`] = parsedSchema;
-    customType.schema = parsedSchema;
-  }
-
-  return customTypes.reduce(
-    (acc, ct) => {
-      acc[ct.name] = [ct];
-      return acc;
-    },
-    {} as Record<string, CustomType[]>,
-  );
-}
-
 // parse transforms a JSON Schema into a standardized Schema.
 export function parse(raw: JSONSchema7, name?: string, isRequired?: boolean): Schema {
-  // Handle $defs first
-  if (raw.$defs) {
-    const customTypes = extractCustomTypes(raw);
-    Object.assign(customTypesByEvent, customTypes);
-  }
-
-  // Handle $ref types
-  let _refName = '';
-  if (raw.$ref) {
-    _refName = extractRefName(raw.$ref) || '';
-
-    return {
-      type: Type.ANY,
-      isRequired: isRequired || false,
-      name: name || raw.title || '',
-      _refName: _refName,
-    };
-  }
-
   // Parse the relevant fields from the JSON Schema based on the type.
   const typeSpecificFields = parseTypeSpecificFields(raw, getType(raw));
 
   const schema: Schema = {
     name: name || raw.title || '',
-    _refName,
     ...typeSpecificFields,
   };
+
+  if (raw.$ref) {
+    schema._refName = extractRefName(raw.$ref) || '';
+  }
 
   if (raw.description) {
     schema.description = raw.description;
@@ -325,6 +252,16 @@ function parseTypeSpecificFields(raw: JSONSchema7, type: Type): TypeSpecificFiel
       if (typeof propertySchema !== 'boolean') {
         const isRequired = requiredFields.has(property);
         fields.properties.push(parse(propertySchema, property, isRequired));
+      }
+    }
+
+    if (raw.$defs) {
+      fields.defs = {};
+      for (const [name, schema] of Object.entries(raw.$defs)) {
+        if (typeof schema === 'boolean') {
+          continue;
+        }
+        fields.defs[name] = parse(schema, name);
       }
     }
 

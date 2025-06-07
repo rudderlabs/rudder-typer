@@ -102,56 +102,6 @@ export interface Schema {
 }
 {{/if}}
 
-{{#if customTypes}}
-/**
- * Custom types defined in $defs
- */
-{{#each customTypes}}
-{{#if isEnum}}
-export enum {{typeName}} {
-{{#each enumValues}}
-  {{key}} = {{value}},
-{{/each}}
-}
-{{else}}
-export interface {{typeName}} {
-{{#each properties}}
-  {{#if description}}
-  /**
-  * {{description}}
-  */
-  {{/if}}
-  {{#if advancedKeywordsDoc}}
-  {{advancedKeywordsDoc}}
-  {{/if}}
-  '{{name}}'{{#unless isRequired}}?{{/unless}}: {{type}};
-{{/each}}
-}
-{{/if}}
-
-{{/each}}
-{{/if}}
-
-{{#if customTypeRefs}}
-/**
- * Consolidated custom types from $defs
- * This interface maps the original schema names to their generated TypeScript types
- */
-export interface CustomTypeDefs {
-{{#each customTypeRefs}}
-  {{#if description}}
-  /**
-  * {{description}}
-  */
-  {{/if}}
-  {{#if advancedKeywordsDoc}}
-  {{advancedKeywordsDoc}}
-  {{/if}}
-  '{{name}}'{{#unless isRequired}}?{{/unless}}: {{type}};
-{{/each}}
-}
-{{/if}}
-
 {{#each objects}}
 {{#each properties}}
 {{#if hasEnum}}
@@ -182,7 +132,7 @@ export interface CustomTypeDefs {
 		{{#if advancedKeywordsDoc}}
 		{{advancedKeywordsDoc}}
 		{{/if}}
-		'{{name}}'{{#unless isRequired}}?{{/unless}}: {{#if hasEnum}}{{enumName}}{{else}}{{#if _refName}}CustomTypeDefs['{{_refName}}']{{#if (eq schemaType 6)}}[]{{/if}}{{else}}{{#if type}}{{type}}{{else}}any{{/if}}{{/if}}{{/if}}
+		'{{name}}'{{#unless isRequired}}?{{/unless}}: {{#if hasEnum}}{{enumName}}{{else}}{{#if type}}{{type}}{{else}}any{{/if}}{{/if}}
 		{{/each}}
 	}
 {{/if}}
@@ -400,6 +350,40 @@ function withRudderTyperContext{{#unless isBrowser}}<P, T extends PayloadMessage
 * @template PropertiesType
 */
 {{/unless}}
+
+{{#each objects}}
+{{#each defs}}
+{{#if hasEnum}}
+	{{#uniqueEnum enumName enumValues}}
+	export enum {{enumName}} {
+	{{enumValues}}
+	}
+	
+	{{/uniqueEnum}}
+{{/if}}
+{{/each}}
+{{/each}}
+
+{{#each objects}}
+{{#if defs}}
+export interface CustomTypeDefs {
+{{#each defs}}
+  {{#if description}}
+  /**
+  * {{description}}
+  */
+  {{/if}}
+  {{#if advancedKeywordsDoc}}
+  {{advancedKeywordsDoc}}
+  {{/if}}
+  '{{name}}'{{#unless isRequired}}?{{/unless}}: {{#if hasEnum}}{{enumName}}{{else}}{{type}}{{/if}};
+{{/each}}
+}
+{{/if}}
+{{/each}}
+
+
+
 
 {{#each objects}}
 	{{#if (or (not ../isBrowser) (and ../isBrowser (not (eq name "Screen"))))}}

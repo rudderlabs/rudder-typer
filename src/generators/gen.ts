@@ -66,33 +66,6 @@ export type TrackingPlan = {
   }[];
 };
 
-export type CustomTypeEnum = {
-  typeName: string;
-  isEnum: true;
-  enumValues: { key: string; value: string }[];
-};
-
-export type CustomTypeInterface = {
-  typeName: string;
-  properties: {
-    name: string;
-    type: string;
-    isRequired: boolean;
-    isNullable: boolean;
-    description?: string;
-    advancedKeywordsDoc?: string;
-  }[];
-};
-
-export type CustomTypeRef = {
-  name: string;
-  type: string;
-  isRequired: boolean;
-  isNullable: boolean;
-  description?: string;
-  advancedKeywordsDoc?: string;
-};
-
 export type BaseRootContext<
   T extends Record<string, unknown>,
   O extends Record<string, unknown>,
@@ -118,9 +91,6 @@ export type BaseRootContext<
     rawEventName: string;
     properties?: (P & BasePropertyContext)[];
   })[];
-  customTypes?: (CustomTypeEnum | CustomTypeInterface)[];
-  customTypeRefs?: CustomTypeRef[];
-  customTypeRefsByName?: { [name: string]: CustomTypeRef };
 };
 
 export type BaseTrackCallContext<P extends Record<string, unknown>> = {
@@ -136,6 +106,7 @@ export type BaseTrackCallContext<P extends Record<string, unknown>> = {
 
 export type BaseObjectContext<P extends Record<string, unknown>> = {
   description?: string;
+  defs?: (P & BasePropertyContext)[];
   properties: (P & BasePropertyContext)[];
 };
 
@@ -434,6 +405,11 @@ async function runGenerator<
         properties.push(await traverseSchema(property, path, eventName));
       }
 
+      const defs: (P & BasePropertyContext)[] = [];
+      for (const [name, defSchema] of Object.entries(schema.defs || {})) {
+        defs.push(await traverseSchema(defSchema, '', name));
+      }
+
       if (parentPath !== '') {
         schema.identifierName = eventName + upperFirst(schema.name);
       }
@@ -447,6 +423,7 @@ async function runGenerator<
       if (object) {
         context.objects.push({
           properties,
+          defs,
           ...object,
         });
       }
