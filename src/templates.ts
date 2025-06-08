@@ -93,6 +93,20 @@ export async function registerStandardHelpers(): Promise<void> {
     return '';
   });
 
+  Handlebars.registerHelper('uniqueDefs', function (objects: any[]) {
+    const uniqueDefsMap: Record<string, any> = {};
+
+    objects.forEach((obj: any) => {
+      if (obj.defs && Array.isArray(obj.defs)) {
+        obj.defs.forEach((def: any) => {
+          uniqueDefsMap[def.name] = def;
+        });
+      }
+    });
+
+    return uniqueDefsMap;
+  });
+
   Handlebars.registerHelper('indentDoc', function (text: string, indentation: string) {
     if (!text) return '';
 

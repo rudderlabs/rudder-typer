@@ -351,7 +351,7 @@ function withRudderTyperContext{{#unless isBrowser}}<P, T extends PayloadMessage
 */
 {{/unless}}
 
-{{#each objects}}
+{{#with (uniqueDefs objects) as |defs|}}
 {{#each defs}}
 {{#if hasEnum}}
 	{{#uniqueEnum enumName enumValues}}
@@ -362,10 +362,7 @@ function withRudderTyperContext{{#unless isBrowser}}<P, T extends PayloadMessage
 	{{/uniqueEnum}}
 {{/if}}
 {{/each}}
-{{/each}}
 
-{{#each objects}}
-{{#if defs}}
 export interface CustomTypeDefs {
 {{#each defs}}
   {{#if description}}
@@ -379,8 +376,7 @@ export interface CustomTypeDefs {
   '{{name}}'{{#unless isRequired}}?{{/unless}}: {{#if hasEnum}}{{enumName}}{{else}}{{type}}{{/if}};
 {{/each}}
 }
-{{/if}}
-{{/each}}
+{{/with}}
 
 
 
