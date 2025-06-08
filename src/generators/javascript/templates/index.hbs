@@ -132,7 +132,7 @@ export interface Schema {
 		{{#if advancedKeywordsDoc}}
 		{{advancedKeywordsDoc}}
 		{{/if}}
-		'{{name}}'{{#unless isRequired}}?{{/unless}}: {{#if hasEnum}}{{enumName}}{{else}}{{#if type}}{{type}}{{else}}any{{/if}}{{/if}}
+		'{{name}}'{{#unless isRequired}}?{{/unless}}: {{#if hasEnum}}{{enumName}}{{else}}{{type}}{{/if}}
 		{{/each}}
 	}
 {{/if}}
