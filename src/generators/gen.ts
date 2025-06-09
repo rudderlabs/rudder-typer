@@ -75,6 +75,7 @@ export type BaseRootContext<
   language: string;
   rudderTyperVersion: string;
   trackingPlanURL: string;
+  defs: (P & BasePropertyContext)[];
   objects: (O & BaseObjectContext<P>)[];
   tracks: (T & BaseTrackCallContext<P>)[];
   page: (T & BaseTrackCallContext<P>)[];
@@ -106,7 +107,7 @@ export type BaseTrackCallContext<P extends Record<string, unknown>> = {
 
 export type BaseObjectContext<P extends Record<string, unknown>> = {
   description?: string;
-  defs?: (P & BasePropertyContext)[];
+  // defs?: (P & BasePropertyContext)[];
   properties: (P & BasePropertyContext)[];
 };
 
@@ -347,6 +348,20 @@ async function runGenerator<
     screen: [],
     group: [],
     objects: [],
+    defs: [],
+  };
+
+  const uniqueDefs = async (schema: Schema) => {
+    if (schema.type !== Type.OBJECT) {
+      return;
+    }
+
+    for (const [name, defSchema] of Object.entries(schema.defs || {})) {
+      if (context.defs.find((d) => d.rawName === name)) {
+        return;
+      }
+      context.defs.push(await traverseSchema(defSchema, 'CustomTypeDefs', 'CustomTypeDefs'));
+    }
   };
 
   // File output.
@@ -405,11 +420,6 @@ async function runGenerator<
         properties.push(await traverseSchema(property, path, eventName));
       }
 
-      const defs: (P & BasePropertyContext)[] = [];
-      for (const [name, defSchema] of Object.entries(schema.defs || {})) {
-        defs.push(await traverseSchema(defSchema, '', name));
-      }
-
       if (parentPath !== '') {
         schema.identifierName = eventName + upperFirst(schema.name);
       }
@@ -423,7 +433,6 @@ async function runGenerator<
       if (object) {
         context.objects.push({
           properties,
-          defs,
           ...object,
         });
       }
@@ -482,6 +491,7 @@ async function runGenerator<
       };
     }
 
+    await uniqueDefs(schema);
     context.tracks.push({
       functionDescription: schema.description,
       rawJSONSchema: stringify(raw, {
@@ -509,6 +519,7 @@ async function runGenerator<
       };
     }
 
+    await uniqueDefs(schema);
     context.screen.push({
       functionDescription: schema.description,
       rawJSONSchema: stringify(raw, {
@@ -536,6 +547,7 @@ async function runGenerator<
       };
     }
 
+    await uniqueDefs(schema);
     context.page.push({
       functionDescription: schema.description,
       rawJSONSchema: stringify(raw, {
@@ -563,6 +575,7 @@ async function runGenerator<
       };
     }
 
+    await uniqueDefs(schema);
     context.group.push({
       functionDescription: schema.description,
       rawJSONSchema: stringify(raw, {
@@ -590,6 +603,7 @@ async function runGenerator<
       };
     }
 
+    await uniqueDefs(schema);
     context.identify.push({
       functionDescription: schema.description,
       rawJSONSchema: stringify(raw, {

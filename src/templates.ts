@@ -99,7 +99,12 @@ export async function registerStandardHelpers(): Promise<void> {
     objects.forEach((obj: any) => {
       if (obj.defs && Array.isArray(obj.defs)) {
         obj.defs.forEach((def: any) => {
-          uniqueDefsMap[def.name] = def;
+          // This check is necessary to avoid duplicate objects
+          // generated from same defs with multiple objects.
+          // DONOT REMOVE THIS CHECK
+          if (!uniqueDefsMap[def.name]) {
+            uniqueDefsMap[def.name] = def;
+          }
         });
       }
     });

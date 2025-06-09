@@ -232,7 +232,7 @@ export function parse(raw: JSONSchema7, name?: string, isRequired?: boolean): Sc
     schema.isRequired = true;
   }
 
-  if (isNullable(raw)) {
+  if (!schema._refName && isNullable(raw)) {
     schema.isNullable = true;
   }
 
