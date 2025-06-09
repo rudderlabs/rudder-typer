@@ -25,6 +25,8 @@
     "cli": "TS_NODE_FILES=true tsx ./src/cli/index.tsx",
     "build": "rm -rf dist && tsc && copyfiles --up 1 \"src/**/*.hbs\" dist/src/ && copyfiles \"README.*\" dist/ && copyfiles \"CHANGELOG.*\" dist/",
     "test": "jest -c jest.config.js",
+    "test:e2e": "jest -c jest.config.js tests/e2e/",
+    "test:all": "npm run test && npm run test:e2e",
     "lint": "eslint './src/**/*.{ts,tsx}'",
     "format": "prettier --write ./src/**/*.{ts,tsx}",
     "format:check": "prettier --check ./src/**/*.{ts,tsx}",

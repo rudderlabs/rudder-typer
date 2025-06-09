@@ -27,7 +27,6 @@ export default {
     '__mocks__',
     '__fixtures__',
     '<rootDir>/node_modules/',
-    '<rootDir>/tests/e2e/.*',
     '<rootDir>/example',
   ],
   collectCoverageFrom: [
