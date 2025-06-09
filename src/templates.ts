@@ -93,25 +93,6 @@ export async function registerStandardHelpers(): Promise<void> {
     return '';
   });
 
-  Handlebars.registerHelper('uniqueDefs', function (objects: any[]) {
-    const uniqueDefsMap: Record<string, any> = {};
-
-    objects.forEach((obj: any) => {
-      if (obj.defs && Array.isArray(obj.defs)) {
-        obj.defs.forEach((def: any) => {
-          // This check is necessary to avoid duplicate objects
-          // generated from same defs with multiple objects.
-          // DONOT REMOVE THIS CHECK
-          if (!uniqueDefsMap[def.name]) {
-            uniqueDefsMap[def.name] = def;
-          }
-        });
-      }
-    });
-
-    return uniqueDefsMap;
-  });
-
   Handlebars.registerHelper('indentDoc', function (text: string, indentation: string) {
     if (!text) return '';
 
