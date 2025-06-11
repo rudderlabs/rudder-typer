@@ -216,21 +216,29 @@ export const javascript: Generator<
 };
 
 const convertToEnum = (values: any[], type: string) => {
+  const filteredSortedType = [
+    ...new Set(type.split(' | ').filter((t) => t === 'number' || t === 'string')),
+  ].sort((a, b) => a.localeCompare(b));
+
   return (
     values
       .map((value) => {
         let key, formattedValue;
 
-        if (type === 'string' || typeof value === 'string') {
-          key = 'S_' + sanitizeKey(value);
-          formattedValue = `'${value.toString().replace(/'/g, "\\'").trim()}'`;
-        } else if (type === 'number') {
+        if (
+          type === 'number' ||
+          (filteredSortedType.includes('number') && typeof value === 'number')
+        ) {
           key = 'N_' + sanitizeKey(value);
           formattedValue = `${value}`;
+        } else if (type === 'string' || filteredSortedType.includes('string')) {
+          key = 'S_' + sanitizeKey(value);
+          formattedValue = `'${value.toString().replace(/'/g, "\\'").trim()}'`;
         }
 
-        return `${key} = ${formattedValue}`;
+        return key && formattedValue ? `${key} = ${formattedValue}` : null;
       })
+      .filter(Boolean)
       .join(',\n    ') + ','
   );
 };
