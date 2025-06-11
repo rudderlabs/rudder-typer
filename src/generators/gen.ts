@@ -351,18 +351,43 @@ async function runGenerator<
     defs: [],
   };
 
+  const defs: Schema[] = [];
   const uniqueDefs = async (schema: Schema) => {
+    // Only start capturing defs if the generator client has added support
+    // for them and the schema is an object.
+    // if (!(options.client.defSupport && schema.type === Type.OBJECT)) {
+    //   return;
+    // }
+
     if (schema.type !== Type.OBJECT) {
       return;
     }
 
     for (const [name, defSchema] of Object.entries(schema.defs || {})) {
-      if (context.defs.find((d) => d.rawName === name)) {
-        return;
+      if (defs.find((d) => d.name === name)) {
+        continue;
       }
-      context.defs.push(await traverseSchema(defSchema, 'CustomTypeDefs', 'CustomTypeDefs'));
+      defs.push(defSchema);
+      // context.defs.push(await traverseSchema(defSchema, 'CustomTypeDefs', 'CustomTypeDefs'));
     }
   };
+
+  async function generateDefs(
+    client: GeneratorClient,
+    context: R & BaseRootContext<T, O, P>,
+    defs: Schema[],
+  ) {
+    if (
+      client.options.client.language === Language.JAVASCRIPT ||
+      client.options.client.language === Language.TYPESCRIPT
+    ) {
+      client.options.client.uniqueEnums = true;
+
+      for (const def of defs) {
+        context.defs.push(await traverseSchema(def, 'CustomTypeDefs', 'CustomTypeDefs'));
+      }
+    }
+  }
 
   // File output.
   const files: File[] = [];
@@ -613,6 +638,10 @@ async function runGenerator<
       ...t,
     });
   }
+
+  // Generate defs with the entities generated added to the context
+  await generateDefs(client, context, defs);
+
   // Perform any root-level generation.
   await generator.generateRoot(client, context);
 
