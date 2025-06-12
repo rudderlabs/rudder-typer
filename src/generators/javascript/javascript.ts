@@ -72,7 +72,7 @@ export const javascript: Generator<
 			'true', 'void', 'with', 'await', 'break', 'catch', 'class', 'const', 'false', 'super', 'throw',
 			'while', 'yield', 'delete', 'export', 'import', 'public', 'return', 'static', 'switch', 'typeof',
 			'default', 'extends', 'finally', 'package', 'private', 'continue', 'debugger', 'function', 'arguments',
-			'interface', 'protected', 'implements', 'instanceof',
+			'interface', 'protected', 'implements', 'instanceof', 'CustomTypeDefs'
 		],
     quoteChar: "'",
     // Note: we don't support the full range of allowed JS chars, instead focusing on a subset.

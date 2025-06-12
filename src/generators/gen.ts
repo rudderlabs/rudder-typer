@@ -368,7 +368,6 @@ async function runGenerator<
         continue;
       }
       defs.push(defSchema);
-      // context.defs.push(await traverseSchema(defSchema, 'CustomTypeDefs', 'CustomTypeDefs'));
     }
   };
 
