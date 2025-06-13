@@ -53,10 +53,6 @@ type JavaScriptPropertyContext = {
   _refName?: string;
 };
 
-function escapeAndFormatString(value: any): string {
-  return `'${value.toString().replace(/'/g, "\\'").trim()}'`;
-}
-
 export const javascript: Generator<
   JavaScriptRootContext,
   JavaScriptTrackCallContext,
