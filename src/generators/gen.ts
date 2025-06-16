@@ -355,9 +355,9 @@ async function runGenerator<
   const uniqueDefs = async (schema: Schema) => {
     // Only start capturing defs if the generator client has added support
     // for them and the schema is an object.
-    // if (!(options.client.defSupport && schema.type === Type.OBJECT)) {
-    //   return;
-    // }
+    if (!(options.client.defSupport && schema.type === Type.OBJECT)) {
+      return;
+    }
 
     if (schema.type !== Type.OBJECT) {
       return;

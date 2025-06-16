@@ -83,6 +83,12 @@ const ConfigSchema = Joi.object().required().keys({
   client: Joi.object().required().keys({
     sdk: Joi.string().required().valid('analytics.js', 'analytics-node', 'analytics-android', 'analytics-ios'),
     language: Joi.string().required().valid('javascript', 'typescript', 'java', 'swift', 'objective-c'),
+    defSupport: Joi.boolean().optional()
+      .when('language', {
+        is: Joi.string().valid('javascript', 'typescript'),
+        then: Joi.boolean().default(true),
+        otherwise: Joi.boolean().default(false)
+      }),
   })
     .when('sdk', {
       is: Joi.string().valid('analytics.js', 'analytics-node'),
@@ -115,6 +121,12 @@ const ConfigSchema = Joi.object().required().keys({
       client: Joi.object().optional().keys({
         sdk: Joi.string().optional().valid('analytics.js', 'analytics-node', 'analytics-android', 'analytics-ios'),
         language: Joi.string().optional().valid('javascript', 'typescript', 'java', 'swift', 'objective-c'),
+        defSupport: Joi.boolean().optional()
+          .when('language', {
+            is: Joi.string().valid('javascript', 'typescript'),
+            then: Joi.boolean().default(true),
+            otherwise: Joi.boolean().default(false)
+          }),
       })
         .when('sdk', {
           is: Joi.string().valid('analytics.js', 'analytics-node'),
@@ -140,12 +152,12 @@ export const validateConfig = (rawConfig: Record<string, unknown>): Config => {
   // Validate the provided configuration file using our Joi schema.
   const result = ConfigSchema.validate(rawConfig, {
     abortEarly: false,
-    convert: false,
+    convert: true,
   });
   if (!!result.error) {
     throw new Error(result.error.annotate());
   }
 
   // We can safely type cast the config, now that is has been validated.
-  return rawConfig as unknown as Config;
+  return result.value as unknown as Config;
 };
