@@ -28,6 +28,10 @@ export type TypeSpecificFields =
   | ObjectTypeFields
   | UnionTypeFields;
 
+export interface RefInfo {
+  _refName?: string;
+}
+
 // TODO: consider whether non-primitive types should have an enum.
 // For unions, potentially the enum should just be within the primitive type
 // and filtered down to the relevant enum values.
@@ -40,27 +44,30 @@ export type Enumable = {
 // Note: we don't support objects or arrays as enums, for simplification purposes.
 export type EnumValue = string | number | boolean | null;
 
-export type PrimitiveTypeFields = Enumable & {
-  type: Type.STRING | Type.INTEGER | Type.NUMBER | Type.BOOLEAN | Type.ANY;
-};
+export type PrimitiveTypeFields = Enumable &
+  RefInfo & {
+    type: Type.STRING | Type.INTEGER | Type.NUMBER | Type.BOOLEAN | Type.ANY;
+  };
 
-export type ArrayTypeFields = {
+export type ArrayTypeFields = RefInfo & {
   type: Type.ARRAY;
   // items specifies the type of any items in this array.
   items: TypeSpecificFields;
 };
 
-export type ObjectTypeFields = {
+export type ObjectTypeFields = RefInfo & {
   type: Type.OBJECT;
+  defs?: Record<string, Schema>;
   // properties specifies all of the expected properties in this object.
   // Note: if an empty properties list is passed, all properties should be allowed.
   properties: Schema[];
 };
 
-export type UnionTypeFields = Enumable & {
-  type: Type.UNION;
-  types: TypeSpecificFields[];
-};
+export type UnionTypeFields = Enumable &
+  RefInfo & {
+    type: Type.UNION;
+    types: TypeSpecificFields[];
+  };
 
 // Type is a standardization of the various JSON Schema types. It removes the concept
 // of a "null" type, and introduces Unions and an explicit Any type. The Any type is
@@ -104,10 +111,14 @@ export function getPropertiesSchema(event: Schema): ObjectTypeSchema {
 
   // Events should always be a type="object" at the root, anything
   // else would not match on a RudderStack analytics event.
+  let defs: Record<string, Schema> | undefined = undefined;
+
   if (event.type === Type.OBJECT) {
     const propertiesSchema = event.properties.find(
       (schema: Schema): boolean => schema.name === 'properties',
     );
+    // Pickup the defs from the event schema if type Object
+    defs = event.defs;
     // The schema representing `.properties` in the RudderStack analytics
     // event should also always be an object.
     if (propertiesSchema && propertiesSchema.type === Type.OBJECT) {
@@ -126,6 +137,7 @@ export function getPropertiesSchema(event: Schema): ObjectTypeSchema {
     ...(properties || {}),
     isRequired: properties ? !!properties.isRequired : false,
     isNullable: false,
+    defs: defs,
     // Use the event's name and description when generating an interface
     // to represent these properties.
     name: event.name,
@@ -200,8 +212,6 @@ function copyAdvancedKeywords(from: JSONSchema7, to: Schema): void {
 
 // parse transforms a JSON Schema into a standardized Schema.
 export function parse(raw: JSONSchema7, name?: string, isRequired?: boolean): Schema {
-  // TODO: validate that the raw JSON Schema is a valid JSON Schema before attempting to parse it.
-
   // Parse the relevant fields from the JSON Schema based on the type.
   const typeSpecificFields = parseTypeSpecificFields(raw, getType(raw));
 
@@ -209,6 +219,10 @@ export function parse(raw: JSONSchema7, name?: string, isRequired?: boolean): Sc
     name: name || raw.title || '',
     ...typeSpecificFields,
   };
+
+  if (raw.$ref) {
+    schema._refName = extractRefName(raw.$ref) || '';
+  }
 
   if (raw.description) {
     schema.description = raw.description;
@@ -241,35 +255,47 @@ function parseTypeSpecificFields(raw: JSONSchema7, type: Type): TypeSpecificFiel
       }
     }
 
+    if (raw.$defs) {
+      fields.defs = {};
+      for (const [name, schema] of Object.entries(raw.$defs)) {
+        if (typeof schema === 'boolean') {
+          continue;
+        }
+        fields.defs[name] = parse(schema, name);
+      }
+    }
+
     return fields;
   } else if (type === Type.ARRAY) {
     const fields: ArrayTypeFields = { type, items: { type: Type.ANY } };
     if (typeof raw.items !== 'boolean' && raw.items !== undefined) {
-      // `items` can be a single schemas, or an array of schemas, so standardize on an array.
-      const definitions = raw.items instanceof Array ? raw.items : [raw.items];
-
-      // Convert from JSONSchema7Definition -> JSONSchema7
-      const schemas = definitions.filter((def) => typeof def !== 'boolean') as JSONSchema7[];
-
-      if (schemas.length === 1) {
-        const schema = schemas[0];
-
-        if (
-          schema.properties &&
-          Object.keys(schema.properties).length > 0 &&
-          schema.type === undefined
-        ) {
-          schema.type = ['array', 'object'];
-        }
-        fields.items = parseTypeSpecificFields(schema, getType(schema));
-      } else if (schemas.length > 1) {
+      if ('$ref' in raw.items && typeof raw.items.$ref === 'string') {
+        const _refName = extractRefName(raw.items.$ref) || '';
         fields.items = {
-          type: Type.UNION,
-          types: schemas.map((schema) => parseTypeSpecificFields(schema, getType(schema))),
+          ...parse(raw.items, undefined, false),
         };
+        fields._refName = _refName;
+      } else {
+        const definitions = raw.items instanceof Array ? raw.items : [raw.items];
+        const schemas = definitions.filter((def) => typeof def !== 'boolean') as JSONSchema7[];
+        if (schemas.length === 1) {
+          const schema = schemas[0];
+          if (
+            schema.properties &&
+            Object.keys(schema.properties).length > 0 &&
+            schema.type === undefined
+          ) {
+            schema.type = ['array', 'object'];
+          }
+          fields.items = parseTypeSpecificFields(schema, getType(schema));
+        } else if (schemas.length > 1) {
+          fields.items = {
+            type: Type.UNION,
+            types: schemas.map((schema) => parseTypeSpecificFields(schema, getType(schema))),
+          };
+        }
       }
     }
-
     return fields;
   } else if (type === Type.UNION) {
     const fields: UnionTypeFields = { type, types: [] };
@@ -351,8 +377,14 @@ function getEnum(raw: JSONSchema7): EnumValue[] | undefined {
   }
 
   const enm = raw.enum.filter(
-    (val) => ['boolean', 'number', 'string'].includes(typeof val) || val === null,
+    (val) => ['boolean', 'number', 'string', 'integer'].includes(typeof val) || val === null,
   ) as EnumValue[];
 
   return enm;
+}
+
+export function extractRefName(ref: string): string | null {
+  const defsPattern = /^#\/\$defs\/(.+)$/;
+  const match = ref.match(defsPattern);
+  return match ? match[1] : null;
 }

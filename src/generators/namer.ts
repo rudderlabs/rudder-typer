@@ -53,6 +53,14 @@ export class Namer {
     );
   }
 
+  public store(name: string, namespace: string): void {
+    if (!this.lookupByName[namespace]) {
+      this.lookupByName[namespace] = new Set();
+    }
+
+    this.lookupByName[namespace].add(name);
+  }
+
   /**
    * register registers a name within a given namespace. The sanitized, collision-free name is returned.
    *
