@@ -138,6 +138,7 @@ export interface Schema {
 {{/if}}
 
 {{/each}}
+
 export type ViolationHandler = (
 	message: {{#if isBrowser}}Record<string, any>{{else}}PayloadMessage<Record<string, any>>{{/if}},
 	{{!-- Swap the type definitions here so we don't want depend on ajv in production just for this type definition. --}}
@@ -349,6 +350,34 @@ function withRudderTyperContext{{#unless isBrowser}}<P, T extends PayloadMessage
 * @template PropertiesType
 */
 {{/unless}}
+
+{{#each defs}}
+{{#if hasEnum}}
+	{{#uniqueEnum enumName enumValues}}
+	export enum {{enumName}} {
+	{{enumValues}}
+	}
+	
+	{{/uniqueEnum}}
+{{/if}}
+{{/each}}
+
+export interface CustomTypeDefs {
+{{#each defs}}
+  {{#if description}}
+  /**
+  * {{description}}
+  */
+  {{/if}}
+  {{#if advancedKeywordsDoc}}
+  {{advancedKeywordsDoc}}
+  {{/if}}
+  '{{name}}'{{#unless isRequired}}?{{/unless}}: {{#if hasEnum}}{{enumName}}{{else}}{{type}}{{/if}};
+{{/each}}
+}
+
+
+
 
 {{#each objects}}
 	{{#if (or (not ../isBrowser) (and ../isBrowser (not (eq name "Screen"))))}}

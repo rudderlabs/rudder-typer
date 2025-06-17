@@ -75,6 +75,7 @@ export type BaseRootContext<
   language: string;
   rudderTyperVersion: string;
   trackingPlanURL: string;
+  defs: (P & BasePropertyContext)[];
   objects: (O & BaseObjectContext<P>)[];
   tracks: (T & BaseTrackCallContext<P>)[];
   page: (T & BaseTrackCallContext<P>)[];
@@ -106,6 +107,7 @@ export type BaseTrackCallContext<P extends Record<string, unknown>> = {
 
 export type BaseObjectContext<P extends Record<string, unknown>> = {
   description?: string;
+  // defs?: (P & BasePropertyContext)[];
   properties: (P & BasePropertyContext)[];
 };
 
@@ -275,7 +277,7 @@ export async function gen(trackingPlan: RawTrackingPlan, options: GenOptions): P
   }
 }
 
-function generateAdvancedKeywordsDocString(schema: Record<string, any>): string {
+export function generateAdvancedKeywordsDocString(schema: Record<string, any>): string {
   const descriptions: Record<string, string> = {
     format: 'Expected format',
     pattern: 'The input should be a valid regular expression',
@@ -346,7 +348,45 @@ async function runGenerator<
     screen: [],
     group: [],
     objects: [],
+    defs: [],
   };
+
+  const defs: Schema[] = [];
+  const uniqueDefs = async (schema: Schema) => {
+    // Only start capturing defs if the generator client has added support
+    // for them and the schema is an object.
+    if (!(options.client.defSupport && schema.type === Type.OBJECT)) {
+      return;
+    }
+
+    if (schema.type !== Type.OBJECT) {
+      return;
+    }
+
+    for (const [name, defSchema] of Object.entries(schema.defs || {})) {
+      if (defs.find((d) => d.name === name)) {
+        continue;
+      }
+      defs.push(defSchema);
+    }
+  };
+
+  async function generateDefs(
+    client: GeneratorClient,
+    context: R & BaseRootContext<T, O, P>,
+    defs: Schema[],
+  ) {
+    if (
+      client.options.client.language === Language.JAVASCRIPT ||
+      client.options.client.language === Language.TYPESCRIPT
+    ) {
+      client.options.client.uniqueEnums = true;
+
+      for (const def of defs) {
+        context.defs.push(await traverseSchema(def, 'CustomTypeDefs', 'CustomTypeDefs'));
+      }
+    }
+  }
 
   // File output.
   const files: File[] = [];
@@ -475,6 +515,7 @@ async function runGenerator<
       };
     }
 
+    await uniqueDefs(schema);
     context.tracks.push({
       functionDescription: schema.description,
       rawJSONSchema: stringify(raw, {
@@ -502,6 +543,7 @@ async function runGenerator<
       };
     }
 
+    await uniqueDefs(schema);
     context.screen.push({
       functionDescription: schema.description,
       rawJSONSchema: stringify(raw, {
@@ -529,6 +571,7 @@ async function runGenerator<
       };
     }
 
+    await uniqueDefs(schema);
     context.page.push({
       functionDescription: schema.description,
       rawJSONSchema: stringify(raw, {
@@ -556,6 +599,7 @@ async function runGenerator<
       };
     }
 
+    await uniqueDefs(schema);
     context.group.push({
       functionDescription: schema.description,
       rawJSONSchema: stringify(raw, {
@@ -583,6 +627,7 @@ async function runGenerator<
       };
     }
 
+    await uniqueDefs(schema);
     context.identify.push({
       functionDescription: schema.description,
       rawJSONSchema: stringify(raw, {
@@ -592,6 +637,10 @@ async function runGenerator<
       ...t,
     });
   }
+
+  // Generate defs with the entities generated added to the context
+  await generateDefs(client, context, defs);
+
   // Perform any root-level generation.
   await generator.generateRoot(client, context);
 

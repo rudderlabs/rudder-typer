@@ -18,6 +18,10 @@ export enum Language {
 export type TypeScriptOptions = {
   sdk: SDK.WEB | SDK.NODE;
   language: Language.TYPESCRIPT;
+  // support for capturing and rendering definitions
+  // present on the tracking plan
+  defSupport: true;
+  uniqueEnums?: boolean;
 };
 
 export type JavaScriptOptions = {
@@ -35,21 +39,27 @@ export type JavaScriptOptions = {
     | 'ESNext'
     | 'Latest';
   moduleTarget?: 'CommonJS' | 'AMD' | 'UMD' | 'System' | 'ES2015' | 'ESNext';
+  // defSupport is true for Javascript as well
+  defSupport: true;
+  uniqueEnums?: boolean;
 };
 
 export type ObjectiveCOptions = {
   sdk: SDK.IOS;
   language: Language.OBJECTIVE_C;
+  defSupport: false;
 };
 
 export type SwiftOptions = {
   sdk: SDK.IOS;
   language: Language.SWIFT;
+  defSupport: false;
 };
 
 export type JavaOptions = {
   sdk: SDK.ANDROID;
   language: Language.JAVA;
+  defSupport: false;
 };
 
 export type Options =

@@ -10,9 +10,6 @@ import { getEnumPropertyTypes, sanitizeEnumKey, sanitizeKey } from '../utils.js'
 
 const { camelCase, upperFirst } = lodash;
 
-// These contexts are what will be passed to Handlebars to perform rendering.
-// Everything in these contexts should be properly sanitized.
-
 type JavaScriptRootContext = {
   isBrowser: boolean;
   useProxy: boolean;
@@ -52,6 +49,8 @@ type JavaScriptPropertyContext = {
   enumName?: string;
   // The formatted enum values
   enumValues?: any;
+  // The ref name of this property.
+  _refName?: string;
 };
 
 export const javascript: Generator<
@@ -69,7 +68,7 @@ export const javascript: Generator<
 			'true', 'void', 'with', 'await', 'break', 'catch', 'class', 'const', 'false', 'super', 'throw',
 			'while', 'yield', 'delete', 'export', 'import', 'public', 'return', 'static', 'switch', 'typeof',
 			'default', 'extends', 'finally', 'package', 'private', 'continue', 'debugger', 'function', 'arguments',
-			'interface', 'protected', 'implements', 'instanceof',
+			'interface', 'protected', 'implements', 'instanceof', 'CustomTypeDefs'
 		],
     quoteChar: "'",
     // Note: we don't support the full range of allowed JS chars, instead focusing on a subset.
@@ -97,18 +96,47 @@ export const javascript: Generator<
       useProxy: true,
     };
   },
+
   generatePrimitive: async (client, schema) => {
     let type = 'any';
     let hasEnum = false;
+    const overrides: Partial<JavaScriptPropertyContext>[] = [];
+
+    if (schema._refName) {
+      overrides.push({
+        type: `CustomTypeDefs['${schema._refName}']`,
+        hasEnum: false,
+      });
+    }
 
     if (schema.type === Type.STRING) {
       type = 'string';
       hasEnum = !!schema.enum;
+      if (hasEnum) {
+        const { enumName, enumValues } = generateEnum(client, schema, {
+          name: client.namer.escapeString(schema.name),
+          type,
+        });
+        overrides.push({
+          enumName,
+          enumValues,
+        });
+      }
     } else if (schema.type === Type.BOOLEAN) {
       type = 'boolean';
     } else if (schema.type === Type.INTEGER || schema.type === Type.NUMBER) {
       type = 'number';
       hasEnum = !!schema.enum;
+      if (hasEnum) {
+        const { enumName, enumValues } = generateEnum(client, schema, {
+          name: client.namer.escapeString(schema.name),
+          type,
+        });
+        overrides.push({
+          enumName,
+          enumValues,
+        });
+      }
     }
 
     return conditionallyNullable(
@@ -118,13 +146,26 @@ export const javascript: Generator<
         type,
       },
       hasEnum,
+      overrides,
     );
   },
-  generateArray: async (client, schema, items) =>
-    conditionallyNullable(schema, {
-      name: client.namer.escapeString(schema.name),
-      type: `${items.type}[]`,
-    }),
+  generateArray: async (client, schema, items) => {
+    return conditionallyNullable(
+      schema,
+      {
+        name: client.namer.escapeString(schema.name),
+        type: `${items.type}[]`,
+      },
+      false,
+      items._refName
+        ? [
+            {
+              type: `CustomTypeDefs['${items._refName}'][]`,
+            },
+          ]
+        : undefined,
+    );
+  },
   generateObject: async (client, schema, properties) => {
     if (properties.length === 0) {
       // If no properties are set, replace this object with a untyped map to allow any properties.
@@ -134,43 +175,53 @@ export const javascript: Generator<
           type: 'Record<string, any>',
         }),
       };
-    } else {
-      // Otherwise generate an interface to represent this object.
-      const interfaceName = client.namer.register(
-        schema.identifierName || schema.name,
-        'interface',
-        {
-          transform: (name: string) => upperFirst(camelCase(name)),
-        },
-      );
-      return {
-        property: conditionallyNullable(schema, {
-          name: client.namer.escapeString(schema.name),
-          type: interfaceName,
-        }),
-        object: {
-          name: interfaceName,
-        },
-      };
     }
+    // Otherwise generate an interface to represent this object.
+    const interfaceName = client.namer.register(schema.identifierName || schema.name, 'interface', {
+      transform: (name: string) => upperFirst(camelCase(name)),
+    });
+
+    return {
+      property: conditionallyNullable(schema, {
+        name: client.namer.escapeString(schema.name),
+        type: interfaceName,
+      }),
+      object: {
+        name: interfaceName,
+      },
+    };
   },
-  generateUnion: async (client, schema, types) =>
-    conditionallyNullable(
+  generateUnion: async (client, schema, types) => {
+    const hasEnum = !!schema.enum;
+    const overrides: Partial<JavaScriptPropertyContext>[] = [];
+
+    if (hasEnum) {
+      const { enumName, enumValues } = generateEnum(client, schema, {
+        name: client.namer.escapeString(schema.name),
+        type: types.map((t) => t.type).join(' | '),
+      });
+
+      overrides.push({
+        enumName,
+        enumValues,
+      });
+    }
+    return conditionallyNullable(
       schema,
       {
         name: client.namer.escapeString(schema.name),
         type: types.map((t) => t.type).join(' | '),
       },
-      !!schema.enum,
-    ),
+      hasEnum,
+      overrides,
+    );
+  },
   generateTrackCall: async (client, _schema, functionName, propertiesObject) => ({
     functionName: functionName,
     propertiesType: propertiesObject.type,
-    // The properties object in a.js can be omitted if no properties are required.
     isPropertiesOptional: client.options.client.sdk === SDK.WEB && !propertiesObject.isRequired,
   }),
   generateRoot: async (client, context) => {
-    // index.hbs contains all JavaScript client logic.
     await client.generateFile<JavaScriptRootContext>(
       client.options.client.language === Language.TYPESCRIPT ? 'index.ts' : 'index.js',
       'generators/javascript/templates/index.hbs',
@@ -241,17 +292,54 @@ const convertToEnum = (values: any[], type: string) => {
   );
 };
 
+function generateEnum(
+  client: GeneratorClient,
+  schema: Schema,
+  property: PropertyContext,
+): { enumName: string; enumValues: string | undefined } {
+  let enumName = sanitizeEnumKey(schema.name) + '_' + getEnumPropertyTypes(schema);
+  const enumValues = 'enum' in schema ? convertToEnum(schema.enum!, property.type) : undefined;
+
+  if (
+    client.options.client.language === Language.JAVASCRIPT ||
+    client.options.client.language === Language.TYPESCRIPT
+  ) {
+    const uniqueEnums = client.options.client.uniqueEnums || false;
+
+    if (uniqueEnums) {
+      // If we are uniquefying the enums, we need to make sure
+      // we register the enumname we well with the namer
+      enumName = client.namer.register(enumName, 'enum');
+    } else {
+      client.namer.store(enumName, 'enum');
+    }
+  }
+
+  return {
+    enumName,
+    enumValues,
+  };
+}
+
 function conditionallyNullable(
   schema: Schema,
   property: PropertyContext,
   hasEnum?: boolean,
+  overrides?: Partial<JavaScriptPropertyContext>[],
 ): JavaScriptPropertyContext {
-  return {
+  const context = {
     ...property,
+    _refName: schema._refName,
     type: !!schema.isNullable && !hasEnum ? `${property.type} | null` : property.type,
     hasEnum: !!hasEnum,
-    enumName: sanitizeEnumKey(schema.name) + '_' + getEnumPropertyTypes(schema),
-    enumValues:
-      hasEnum && 'enum' in schema ? convertToEnum(schema.enum!, property.type) : undefined,
   };
+
+  if (overrides) {
+    return {
+      ...context,
+      ...Object.assign({}, ...overrides),
+    };
+  }
+
+  return context;
 }
