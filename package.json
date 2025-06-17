@@ -24,7 +24,7 @@
     "prod": "NODE_ENV=production npm run cli prod",
     "cli": "TS_NODE_FILES=true tsx ./src/cli/index.tsx",
     "build": "rm -rf dist && tsc && copyfiles --up 1 \"src/**/*.hbs\" dist/src/ && copyfiles \"README.*\" dist/ && copyfiles \"CHANGELOG.*\" dist/",
-    "test": "jest -c jest.config.js",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest -c jest.config.js",
     "lint": "eslint './src/**/*.{ts,tsx}'",
     "format": "prettier --write ./src/**/*.{ts,tsx}",
     "format:check": "prettier --check ./src/**/*.{ts,tsx}",
@@ -82,6 +82,7 @@
     "react": "18.3.1",
     "sort-keys": "5.0.0",
     "typescript": "5.5.4",
+    "yaml": "^2.8.0",
     "yargs": "17.7.2"
   },
   "files": [
