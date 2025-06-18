@@ -1,0 +1,33 @@
+{{#each types}}
+{{#if comment}}
+/**
+ * {{comment}}
+ */
+{{/if}}
+export type {{name}} = {
+  {{#each properties}}
+  {{#if comment}}
+  /**
+   * {{comment}}
+   */
+  {{/if}}
+  {{name}}{{#if optional}}?{{/if}}: {{type}};
+  {{/each}}
+};
+
+{{/each}}
+export class RudderTyperAnalytics {
+  {{#each functions}}
+  {{#if comment}}
+  /**
+   * {{comment}}
+   */
+  {{/if}}
+  {{name}}(properties: {{propertyType}}) {
+    console.log('{{eventType}}{{#if eventName}} ({{eventName}}){{/if}}:', properties);
+  }{{#unless @last}}
+
+  {{/unless}}
+  {{/each}}
+
+}
