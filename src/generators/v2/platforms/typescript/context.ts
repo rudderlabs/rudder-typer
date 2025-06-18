@@ -2,11 +2,31 @@
  * Top-level context for TypeScript code generation.
  * Contains:
  *  - type definitions
+ *  - enum definitions
  *  - function definitions of the RudderTyperAnalytics class.
  */
 export type TypeScriptContext = {
   types: TypeContext[];
   functions: FunctionContext[];
+  enums: EnumContext[];
+};
+
+/**
+ * Represents a TypeScript enum definition.
+ */
+export type EnumContext = {
+  name: string;
+  comment?: string;
+  members: EnumMemberContext[];
+};
+
+/**
+ * Represents a member of a TypeScript enum.
+ */
+export type EnumMemberContext = {
+  name: string;
+  comment?: string;
+  value: string;
 };
 
 /**

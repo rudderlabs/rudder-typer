@@ -134,4 +134,29 @@ export class TypeScriptNamer extends BaseNamer {
     const baseName = camelCase(name);
     return this.createName(baseName, `properties/${typeName}`);
   }
+
+  /**
+   * Creates a PascalCase enum name from parts.
+   * Joins parts with spaces, converts to camelCase, and capitalizes first letter.
+   *
+   * @param parts Array of strings that make up the enum name
+   * @returns A unique, valid TypeScript enum identifier
+   */
+  public createEnumName(parts: string[]): string {
+    const baseName = upperFirst(camelCase(parts.join(' ')));
+    return this.createName(baseName, 'enums');
+  }
+
+  /**
+   * Creates a PascalCase enum member name.
+   * Since enum members are scoped to their enum, we use the enum name for uniqueness.
+   *
+   * @param name The base member name
+   * @param enumName The name of the containing enum (used for scope)
+   * @returns A unique, valid TypeScript enum member identifier
+   */
+  public createEnumMemberName(name: string, enumName: string): string {
+    const baseName = upperFirst(camelCase(name));
+    return this.createName(baseName, `enums/${enumName}`);
+  }
 }

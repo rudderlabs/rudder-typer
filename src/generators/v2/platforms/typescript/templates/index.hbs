@@ -1,3 +1,16 @@
+{{#each enums}}
+{{#if comment}}
+/**
+ * {{comment}}
+ */
+{{/if}}
+export enum {{name}} {
+  {{#each members}}
+  {{name}} = {{value}}{{#unless @last}},{{/unless}}
+  {{/each}}
+}
+
+{{/each}}
 {{#each types}}
 {{#if comment}}
 /**

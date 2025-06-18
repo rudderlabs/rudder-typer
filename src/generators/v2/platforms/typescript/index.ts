@@ -1,7 +1,7 @@
 import { ObjectSchema, Plan } from '../../plan/index.js';
 import { Platform } from '../core/index.js';
 import Handlebars from 'handlebars';
-import { FunctionContext, PropertyContext, TypeContext, TypeScriptContext } from './context.js';
+import { EnumMemberContext, PropertyContext, TypeScriptContext } from './context.js';
 import { readFile } from 'fs/promises';
 import { TypeScriptNamer } from './namer.js';
 
@@ -38,8 +38,11 @@ const platform: Platform = {
  * @returns Context object for template rendering
  */
 function contextFromPlan(plan: Plan): TypeScriptContext {
-  const types: TypeContext[] = [];
-  const functions: FunctionContext[] = [];
+  const context: TypeScriptContext = {
+    types: [],
+    functions: [],
+    enums: [],
+  };
   const namer = new TypeScriptNamer();
 
   for (const rule of plan.rules) {
@@ -49,10 +52,10 @@ function contextFromPlan(plan: Plan): TypeScriptContext {
     const propertyType = namer.createTypeName(typeNameParts);
 
     // Start processing from the top-level schema of the event rule.
-    processSchema(schema, propertyType, [], types, namer, typeNameParts.slice(0, -1));
+    processSchema(schema, propertyType, [], context, namer, typeNameParts.slice(0, -1));
 
     // Generate function context
-    functions.push({
+    context.functions.push({
       name: namer.createFunctionName([event.eventType, eventName]),
       eventType: event.eventType,
       eventName: event.name,
@@ -61,10 +64,7 @@ function contextFromPlan(plan: Plan): TypeScriptContext {
     });
   }
 
-  return {
-    types,
-    functions,
-  };
+  return context;
 }
 
 /**
@@ -74,7 +74,7 @@ function contextFromPlan(plan: Plan): TypeScriptContext {
  * @param schema The object schema to process
  * @param typeName Name for the type being generated
  * @param path Current path in the object hierarchy
- * @param allTypes Array to collect all generated types
+ * @param context The TypeScript context to enrich with types and enums
  * @param namer Name generator for creating valid identifiers
  * @param baseNameParts Base parts of the type name (e.g., event name and type)
  * @returns Array of property contexts for the current type
@@ -83,7 +83,7 @@ function processSchema(
   schema: ObjectSchema,
   typeName: string,
   path: string[],
-  allTypes: TypeContext[],
+  context: TypeScriptContext,
   namer: TypeScriptNamer,
   baseNameParts: string[],
 ): PropertyContext[] {
@@ -102,15 +102,35 @@ function processSchema(
         property.name,
         'Properties',
       ]);
-      processSchema(nestedSchema, nestedTypeName, newPath, allTypes, namer, baseNameParts);
+      processSchema(nestedSchema, nestedTypeName, newPath, context, namer, baseNameParts);
       properties.push({
         name: namer.createPropertyName(property.name, typeName),
         type: nestedTypeName,
         comment: property.description,
         optional: !required,
       });
+    } else if (property.config?.enum) {
+      // Create an enum for this property using just the property name
+      const enumName = namer.createEnumName([property.name, 'PropertyEnum']);
+      const enumMembers: EnumMemberContext[] = property.config.enum.map((value) => ({
+        name: namer.createEnumMemberName(value, enumName),
+        value: `"${value}"`,
+      }));
+
+      context.enums.push({
+        name: enumName,
+        comment: property.description,
+        members: enumMembers,
+      });
+
+      properties.push({
+        name: namer.createPropertyName(property.name, typeName),
+        type: enumName,
+        comment: property.description,
+        optional: !required,
+      });
     } else {
-      // It's a primitive type.
+      // Regular primitive type
       properties.push({
         name: namer.createPropertyName(property.name, typeName),
         type: property.type,
@@ -121,7 +141,7 @@ function processSchema(
   }
 
   // Create a new type for the current schema level.
-  allTypes.push({
+  context.types.push({
     name: typeName,
     properties,
   });
