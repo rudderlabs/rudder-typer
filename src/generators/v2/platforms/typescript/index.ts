@@ -49,14 +49,16 @@ function contextFromPlan(plan: Plan): TypeScriptContext {
     const { event, schema } = rule;
     const eventName = event.name ?? '';
     const typeNameParts = [eventName, event.eventType, 'Event', 'Properties'];
-    const propertyType = namer.createTypeName(typeNameParts);
+    const typeId = `${event.eventType}.${eventName}.type`;
+    const propertyType = namer.createTypeName(typeId, typeNameParts);
 
     // Start processing from the top-level schema of the event rule.
     processSchema(schema, propertyType, [], context, namer, typeNameParts.slice(0, -1));
 
     // Generate function context
+    const functionId = `${event.eventType}.${eventName}.function`;
     context.functions.push({
-      name: namer.createFunctionName([event.eventType, eventName]),
+      name: namer.createFunctionName(functionId, [event.eventType, eventName]),
       eventType: event.eventType,
       eventName: event.name,
       propertyType,
@@ -94,9 +96,12 @@ function processSchema(
     const { property, required, schema: nestedSchema } = propertySchema;
     const newPath = [...path, property.name];
 
+    const propId = `${[...baseNameParts, ...path, property.name].join('.')}.prop`;
+
     if (property.type === 'object' && nestedSchema) {
       // It's a nested object. Generate a new type for it.
-      const nestedTypeName = namer.createTypeName([
+      const typeId = `${[...baseNameParts, ...path, property.name].join('.')}.type`;
+      const nestedTypeName = namer.createTypeName(typeId, [
         ...baseNameParts,
         ...path,
         property.name,
@@ -104,27 +109,52 @@ function processSchema(
       ]);
       processSchema(nestedSchema, nestedTypeName, newPath, context, namer, baseNameParts);
       properties.push({
-        name: namer.createPropertyName(property.name, typeName),
+        name: namer.createPropertyName(propId, property.name, typeName),
         type: nestedTypeName,
+        comment: property.description,
+        optional: !required,
+      });
+    } else if (typeof property.type === 'object' && 'schema' in property.type) {
+      // It's a custom type
+      const customType = property.type;
+      const customTypeId = `${customType.name}.customType`;
+      const customTypeName = namer.createTypeName(customTypeId, [customType.name, 'CustomType']);
+
+      // Process the custom type's schema if we haven't already
+      if (!context.types.find((t) => t.name === customTypeName)) {
+        processSchema(customType.schema, customTypeName, [], context, namer, [customType.name]);
+      }
+
+      properties.push({
+        name: namer.createPropertyName(propId, property.name, typeName),
+        type: customTypeName,
         comment: property.description,
         optional: !required,
       });
     } else if (property.config?.enum) {
       // Create an enum for this property using just the property name
-      const enumName = namer.createEnumName([property.name, 'PropertyEnum']);
-      const enumMembers: EnumMemberContext[] = property.config.enum.map((value) => ({
-        name: namer.createEnumMemberName(value, enumName),
-        value: `"${value}"`,
-      }));
+      const enumId = `${property.name}.enum`;
+      const enumName = namer.createEnumName(enumId, [property.name, 'PropertyEnum']);
 
-      context.enums.push({
-        name: enumName,
-        comment: property.description,
-        members: enumMembers,
-      });
+      // Only create the enum if it doesn't already exist
+      if (!context.enums.find((e) => e.name === enumName)) {
+        const enumMembers: EnumMemberContext[] = property.config.enum.map((value) => {
+          const memberId = `${enumId}.${value}`;
+          return {
+            name: namer.createEnumMemberName(memberId, value, enumName),
+            value: `"${value}"`,
+          };
+        });
+
+        context.enums.push({
+          name: enumName,
+          comment: property.description,
+          members: enumMembers,
+        });
+      }
 
       properties.push({
-        name: namer.createPropertyName(property.name, typeName),
+        name: namer.createPropertyName(propId, property.name, typeName),
         type: enumName,
         comment: property.description,
         optional: !required,
@@ -132,7 +162,7 @@ function processSchema(
     } else {
       // Regular primitive type
       properties.push({
-        name: namer.createPropertyName(property.name, typeName),
+        name: namer.createPropertyName(propId, property.name, typeName),
         type: property.type,
         comment: property.description,
         optional: !required,

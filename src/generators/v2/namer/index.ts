@@ -10,6 +10,7 @@ export abstract class BaseNamer {
    */
   protected abstract reservedKeywords: Set<string>;
   private generatedNames: Record<string, Set<string>> = {};
+  private nameIdMap: Record<string, Record<string, string>> = {};
 
   /**
    * Sanitizes an input string to create a valid identifier in the target language.
@@ -20,14 +21,32 @@ export abstract class BaseNamer {
   public abstract sanitize(name: string): string;
 
   /**
-   * Creates a unique name within a given scope by handling collisions.
-   * If a name already exists in the scope, appends a numeric suffix.
+   * Retrieves a previously generated name by its ID and scope.
    *
-   * @param name The base name to create
+   * @param id The unique identifier used when registering the name
    * @param scope The namespace for collision detection (e.g., 'types', 'properties/MyType')
+   * @returns The generated name if found, undefined otherwise
+   */
+  public getName(id: string, scope: string = 'default'): string | undefined {
+    return this.nameIdMap[scope]?.[id];
+  }
+
+  /**
+   * Registers a unique name within a given scope by handling collisions.
+   * If a name has already been registered with the given ID, returns that name.
+   * Otherwise, if the name already exists in the scope, appends a numeric suffix.
+   *
+   * @param name The base name to register
+   * @param scope The namespace for collision detection (e.g., 'types', 'properties/MyType')
+   * @param id A unique identifier to associate with this name
    * @returns A unique name within the given scope
    */
-  public createName(name: string, scope: string = 'default'): string {
+  public registerName(id: string, name: string, scope: string): string {
+    const existingName = this.getName(id, scope);
+    if (existingName) {
+      return existingName;
+    }
+
     if (!this.generatedNames[scope]) {
       this.generatedNames[scope] = new Set();
     }
@@ -46,6 +65,12 @@ export abstract class BaseNamer {
     }
 
     this.generatedNames[scope].add(finalName);
+
+    if (!this.nameIdMap[scope]) {
+      this.nameIdMap[scope] = {};
+    }
+    this.nameIdMap[scope][id] = finalName;
+
     return finalName;
   }
 }

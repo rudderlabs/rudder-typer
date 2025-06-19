@@ -7,6 +7,12 @@ export type Plan = {
   rules: EventRule[];
 };
 
+export type CustomType = {
+  name: string;
+  description: string;
+  schema: ObjectSchema;
+};
+
 export type Event = {
   eventType: EventType;
   name?: string;
@@ -14,7 +20,7 @@ export type Event = {
 };
 
 export type PrimitiveType = 'string' | 'number' | 'boolean' | 'array' | 'object' | 'date';
-export type PropertyType = PrimitiveType | string;
+export type PropertyType = PrimitiveType | CustomType;
 export type PropertyConfig = {
   enum?: string[]; // For enum types
 };

@@ -105,22 +105,24 @@ export class TypeScriptNamer extends BaseNamer {
    * Joins parts with spaces, converts to camelCase, and capitalizes first letter.
    *
    * @param parts Array of strings that make up the type name
+   * @param id Unique identifier for the type
    * @returns A unique, valid TypeScript type identifier
    */
-  public createTypeName(parts: string[]): string {
+  public createTypeName(id: string, parts: string[]): string {
     const baseName = upperFirst(camelCase(parts.join(' ')));
-    return this.createName(baseName, 'types');
+    return this.registerName(id, baseName, 'types');
   }
 
   /**
    * Creates a camelCase function name from parts.
    *
    * @param parts Array of strings that make up the function name
+   * @param id Unique identifier for the function
    * @returns A unique, valid TypeScript function identifier
    */
-  public createFunctionName(parts: string[]): string {
+  public createFunctionName(id: string, parts: string[]): string {
     const baseName = camelCase(parts.join(' '));
-    return this.createName(baseName, 'functions');
+    return this.registerName(id, baseName, 'functions');
   }
 
   /**
@@ -128,11 +130,12 @@ export class TypeScriptNamer extends BaseNamer {
    *
    * @param name The base property name
    * @param typeName The name of the containing type (used for scope)
+   * @param id Unique identifier for the property
    * @returns A unique, valid TypeScript property identifier
    */
-  public createPropertyName(name: string, typeName: string): string {
+  public createPropertyName(id: string, name: string, typeName: string): string {
     const baseName = camelCase(name);
-    return this.createName(baseName, `properties/${typeName}`);
+    return this.registerName(id, baseName, `properties/${typeName}`);
   }
 
   /**
@@ -140,11 +143,12 @@ export class TypeScriptNamer extends BaseNamer {
    * Joins parts with spaces, converts to camelCase, and capitalizes first letter.
    *
    * @param parts Array of strings that make up the enum name
+   * @param id Unique identifier for the enum
    * @returns A unique, valid TypeScript enum identifier
    */
-  public createEnumName(parts: string[]): string {
+  public createEnumName(id: string, parts: string[]): string {
     const baseName = upperFirst(camelCase(parts.join(' ')));
-    return this.createName(baseName, 'enums');
+    return this.registerName(id, baseName, 'enums');
   }
 
   /**
@@ -153,10 +157,11 @@ export class TypeScriptNamer extends BaseNamer {
    *
    * @param name The base member name
    * @param enumName The name of the containing enum (used for scope)
+   * @param id Unique identifier for the enum member
    * @returns A unique, valid TypeScript enum member identifier
    */
-  public createEnumMemberName(name: string, enumName: string): string {
+  public createEnumMemberName(id: string, name: string, enumName: string): string {
     const baseName = upperFirst(camelCase(name));
-    return this.createName(baseName, `enums/${enumName}`);
+    return this.registerName(id, baseName, `enums/${enumName}`);
   }
 }

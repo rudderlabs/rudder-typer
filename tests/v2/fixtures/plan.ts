@@ -1,4 +1,4 @@
-import { Plan, Event, Property } from '../../../src/generators/v2/plan/index.js';
+import { Plan, Event, Property, CustomType } from '../../../src/generators/v2/plan/index.js';
 
 const events: Record<string, Event> = {
   identify: {
@@ -8,6 +8,71 @@ const events: Record<string, Event> = {
     eventType: 'track',
     name: 'User Signed Up',
     description: 'Triggered when a user signs up for the service',
+  },
+};
+
+const customTypes: Record<string, CustomType> = {};
+customTypes.Coordinates = {
+  name: 'Coordinates',
+  description: 'Geographical coordinates',
+  schema: {
+    properties: {
+      longitude: {
+        property: {
+          name: 'longitude',
+          description: 'Longitude of the location',
+          type: 'number',
+        },
+        required: true,
+      },
+      latitude: {
+        property: {
+          name: 'latitude',
+          description: 'Latitude of the location',
+          type: 'number',
+        },
+        required: true,
+      },
+    },
+    additionalProperties: false,
+  },
+};
+
+// Create a custom type for the address
+customTypes.Address = {
+  name: 'Address',
+  description: 'Physical address details',
+  schema: {
+    properties: {
+      street: {
+        property: {
+          name: 'street',
+          description: 'Street address of the user',
+          type: 'string',
+        },
+        required: true,
+      },
+      country: {
+        property: {
+          name: 'country',
+          description: 'Country of the user',
+          type: 'string',
+          config: {
+            enum: ['USA', 'Greece', 'India'],
+          },
+        },
+        required: true,
+      },
+      coordinates: {
+        property: {
+          name: 'coordinates',
+          description: 'Geographical coordinates',
+          type: customTypes.Coordinates,
+        },
+        required: false,
+      },
+    },
+    additionalProperties: false,
   },
 };
 
@@ -25,35 +90,7 @@ const properties: Record<string, Property> = {
   address: {
     name: 'address',
     description: 'Physical address of the user',
-    type: 'object',
-  },
-  street: {
-    name: 'street',
-    description: 'Street address of the user',
-    type: 'string',
-  },
-  country: {
-    name: 'country',
-    description: 'Country of the user',
-    type: 'string',
-    config: {
-      enum: ['USA', 'Greece', 'India'],
-    },
-  },
-  coordinates: {
-    name: 'coordinates',
-    description: 'Geographical coordinates',
-    type: 'object',
-  },
-  longitude: {
-    name: 'longitude',
-    description: 'Longitude of the location',
-    type: 'number',
-  },
-  latitude: {
-    name: 'latitude',
-    description: 'Latitude of the location',
-    type: 'number',
+    type: customTypes.Address,
   },
   class: {
     name: 'class',
@@ -64,6 +101,11 @@ const properties: Record<string, Property> = {
     name: '2ndEmail',
     description: 'Secondary email starting with number',
     type: 'string',
+  },
+  nested: {
+    name: 'nested',
+    description: 'A nested property',
+    type: 'object',
   },
 };
 
@@ -93,36 +135,18 @@ export const example: Plan = {
           },
           address: {
             property: properties.address,
+            required: true,
+          },
+          nested: {
+            property: properties.nested,
             required: false,
             schema: {
               properties: {
-                street: {
-                  property: properties.street,
+                userId: {
+                  property: properties.userId,
                   required: true,
-                },
-                country: {
-                  property: properties.country,
-                  required: true,
-                },
-                coordinates: {
-                  property: properties.coordinates,
-                  required: false,
-                  schema: {
-                    properties: {
-                      longitude: {
-                        property: properties.longitude,
-                        required: true,
-                      },
-                      latitude: {
-                        property: properties.latitude,
-                        required: true,
-                      },
-                    },
-                    additionalProperties: false,
-                  },
                 },
               },
-              additionalProperties: false,
             },
           },
         },
@@ -140,6 +164,10 @@ export const example: Plan = {
           },
           email: {
             property: properties.email,
+            required: false,
+          },
+          address: {
+            property: properties.address,
             required: false,
           },
         },
