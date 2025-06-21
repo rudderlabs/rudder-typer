@@ -1,5 +1,5 @@
 import { Namer } from '../src/generators/namer';
-import { camelCase } from 'lodash';
+import _ from 'lodash';
 
 describe('Namer', () => {
   let namer: Namer;
@@ -55,10 +55,10 @@ describe('Namer', () => {
       expect(namer.register('order-completed', 'another example')).toEqual('order_completed');
     });
     test('handles name collisions with a transform', () => {
-      expect(namer.register('order-completed', 'example', { transform: camelCase })).toEqual(
+      expect(namer.register('order-completed', 'example', { transform: _.camelCase })).toEqual(
         'orderCompleted',
       );
-      expect(namer.register('order_completed', 'example', { transform: camelCase })).toEqual(
+      expect(namer.register('order_completed', 'example', { transform: _.camelCase })).toEqual(
         'orderCompleted1',
       );
       expect(namer.register('order=completed', 'example')).toEqual('order_completed');
@@ -84,13 +84,13 @@ describe('Namer', () => {
       expect(
         namer.register('order-completed', 'example', {
           prefixes: ['FooBar'],
-          transform: camelCase,
+          transform: _.camelCase,
         }),
       ).toEqual('orderCompleted');
       expect(
         namer.register('order_completed', 'example', {
           prefixes: ['FooBar'],
-          transform: camelCase,
+          transform: _.camelCase,
         }),
       ).toEqual('fooBarOrderCompleted');
     });

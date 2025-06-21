@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import { promisify } from 'util';
 import { resolve, dirname } from 'path';
-import * as yaml from 'js-yaml';
+import { parse } from 'yaml';
 import { generateFromTemplate } from '../../templates.js';
 import { homedir } from 'os';
 import { Config, TrackingPlanConfig, validateConfig } from './schema.js';
@@ -45,7 +45,7 @@ export async function getConfig(path = './'): Promise<Config | undefined> {
     );
   }
 
-  const rawConfig = yaml.load(file);
+  const rawConfig = parse(file);
 
   return validateConfig(rawConfig as Config);
 }
