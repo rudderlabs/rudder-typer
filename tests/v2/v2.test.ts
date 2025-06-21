@@ -6,7 +6,7 @@ import * as os from 'os';
 
 describe('v2 generator tests', () => {
   it('should generate a valid v2 schema', async () => {
-    const files = await platforms.typescript.render(example);
+    const files = await platforms.kotlin.render(example);
     // Write files to ~/generated-out
     const outDir = path.join(os.homedir(), 'generated-out');
     if (!fs.existsSync(outDir)) {

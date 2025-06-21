@@ -11,6 +11,7 @@ export type CustomType = {
   name: string;
   description: string;
   schema: ObjectSchema;
+  enum?: string[];
 };
 
 export type Event = {
