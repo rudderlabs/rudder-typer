@@ -63,7 +63,7 @@
   "dependencies": {
     "figures": "6.1.0",
     "fuse.js": "7.0.0",
-    "got": "14.4.2",
+    "got": "14.4.3",
     "handlebars": "4.7.8",
     "ink": "5.0.1",
     "ink-link": "4.1.0",
