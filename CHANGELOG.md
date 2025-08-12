@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.7.3](https://github.com/rudderlabs/rudder-typer/compare/v1.7.2...v1.7.3) (2025-08-12)
+
+
+### Bug Fixes
+
+* properly handle swift properties from enums ([#182](https://github.com/rudderlabs/rudder-typer/issues/182)) ([96967ec](https://github.com/rudderlabs/rudder-typer/commit/96967ecb942de54185aaaca8a28cc03e11cc8946))
+
 ### [1.7.2](https://github.com/rudderlabs/rudder-typer/compare/v1.7.1...v1.7.2) (2025-07-31)
 
 ### [1.7.1](https://github.com/rudderlabs/rudder-typer/compare/v1.7.0...v1.7.1) (2025-07-02)
