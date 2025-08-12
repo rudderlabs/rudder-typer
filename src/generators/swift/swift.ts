@@ -306,8 +306,11 @@ function generatePropertiesDictionary(
 
   for (const property of properties) {
     const name = prefix && prefix.length > 0 ? `${prefix}${property.name}` : property.name;
-    const serializableName =
-      property.schemaType === Type.BOOLEAN
+    const serializableName = property.hasEnum
+      ? property.isVariableNullable
+        ? `${name}?.rawValue`
+        : `${name}.rawValue`
+      : property.schemaType === Type.BOOLEAN
         ? name
         : property.schemaType === Type.INTEGER
           ? name
