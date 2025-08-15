@@ -10,6 +10,7 @@ export default {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
+        useESM: true,
         diagnostics: false,
         isolatedModules: true,
         sourceMap: true,
@@ -55,4 +56,8 @@ export default {
   cacheDirectory: '../../node_modules/.cache/unit-tests',
   clearMocks: true,
   modulePaths: ['<rootDir>/'],
+  moduleNameMapper: {
+    '^(\\.{1,2}/.+)\\.js$': '$1',
+  },
+  extensionsToTreatAsEsm: ['.ts', '.tsx'],
 };
