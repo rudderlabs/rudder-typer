@@ -21,6 +21,11 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/master') || github.event.pull_request.merged == true
 
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
