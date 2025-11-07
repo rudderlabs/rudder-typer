@@ -6,24 +6,29 @@ on:
 env:
   NODE_OPTIONS: '--no-warnings'
 
+permissions:
+  contents: read
+
 jobs:
   draft-new-release:
+    permissions:
+      contents: write  # for Git to git push
     name: Draft a new release
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/heads/develop') || startsWith(github.ref, 'refs/heads/hotfix/')
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
         with:
           egress-policy: audit
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           fetch-depth: 0
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -93,7 +98,7 @@ jobs:
           git push --follow-tags
 
       - name: Create pull request into master
-        uses: repo-sync/pull-request@v2
+        uses: repo-sync/pull-request@7e79a9f5dc3ad0ce53138f01df2fad14a04831c5 # v2.12.1
         with:
           source_branch: ${{ steps.create-release.outputs.branch_name }}
           destination_branch: 'master'
