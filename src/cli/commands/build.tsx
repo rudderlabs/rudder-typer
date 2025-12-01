@@ -35,7 +35,6 @@ import {
   isWrappedError,
 } from './error.js';
 import figures from 'figures';
-import { Init } from './init.js';
 import { getEmail } from '../config/config.js';
 import { getTrackingPlanName, toTrackingPlanId } from '../api/trackingplans.js';
 import { APIError } from '../types.js';
@@ -87,16 +86,20 @@ export const Build: React.FC<Props> = ({
     }
   }, [step]);
 
-  // If a ruddertyper.yml hasn't been configured yet, drop the user into the init wizard.
+  // If a ruddertyper.yml hasn't been configured yet, show an error.
+  // Users need a config file but don't need authentication for local dev.
   if (!config) {
     return (
-      <Init
-        config={config}
-        configPath={configPath}
-        onDone={setConfig}
-        anonymousId={anonymousId}
-        analyticsProps={analyticsProps}
-      />
+      <Box marginBottom={1} marginTop={1} flexDirection="column">
+        <Box>
+          <Text color="red">✖ No ruddertyper.yml configuration found.</Text>
+        </Box>
+        <Box marginLeft={4} marginTop={1}>
+          <Text color="grey">Create a ruddertyper.yml or run </Text>
+          <Text color="yellow">npx rudder-typer init</Text>
+          <Text color="grey"> to set one up.</Text>
+        </Box>
+      </Box>
     );
   }
 
@@ -200,22 +203,17 @@ export const UpdatePlanStep: React.FC<UpdatePlanStepProps> = ({
           }
         } else {
           setFailedToFindToken(true);
-
           localCredentialsMissing = true;
-          const missingItems = [];
-          if (!token) missingItems.push('API token');
-          if (!email) missingItems.push('email');
-
-          const warningMessage = `Missing credentials: ${missingItems.join(' and ')}. Please run 'rudder-typer init' to set up your credentials.`;
-          handleError(wrapError(warningMessage));
+          // Only log as warning - auth is optional for local development
         }
       }
       newTrackingPlan = newTrackingPlan || previousTrackingPlan;
       if (!newTrackingPlan) {
         if (localCredentialsMissing) {
+          // No local plan.json and no auth configured - guide user appropriately
           handleFatalError(
             wrapError(
-              "Authentication failed: API credentials missing. Run 'rudder-typer init' to set up your credentials.",
+              `No plan.json found at '${trackingPlanConfig.path}'. Either add a plan.json file or configure API credentials to fetch one.`,
             ),
           );
         } else if (localApiError) {
