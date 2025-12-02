@@ -382,7 +382,7 @@ const PathPrompt: React.FC<PathPromptProps> = ({
 
   const isNewDirectory =
     !['', '.', './'].includes(normalize(path)) && !directories.includes(normalize(path));
-  const directoryRows: (string | JSX.Element)[] = isNewDirectory
+  const directoryRows: React.ReactNode[] = isNewDirectory
     ? [
         <Text key="new-directory">
           {path} <Text color="blue">(new)</Text>
@@ -886,8 +886,8 @@ type StepProps = {
   name: string;
   step?: number;
   isLoading?: boolean;
-  description?: JSX.Element;
-  tips?: (string | JSX.Element)[];
+  description?: React.ReactNode;
+  tips?: React.ReactNode[];
   children: React.ReactNode;
 };
 

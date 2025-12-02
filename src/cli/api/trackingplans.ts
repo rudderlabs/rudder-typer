@@ -6,7 +6,7 @@ import { promisify } from 'util';
 import lodash from 'lodash';
 import stringify from 'json-stable-stringify';
 
-const { flow, pickBy } = lodash;
+const { pickBy } = lodash;
 const writeFile = promisify(fs.writeFile);
 const readFile = promisify(fs.readFile);
 
@@ -26,7 +26,7 @@ export async function loadTrackingPlan(
       }),
     ) as RudderAPI.TrackingPlan;
 
-    return await sanitizeTrackingPlan(plan);
+    return sanitizeTrackingPlan(plan);
   } catch {
     // We failed to read the Tracking Plan, possibly because no plan.json exists.
     return undefined;
@@ -42,11 +42,8 @@ export async function writeTrackingPlan(
   await verifyDirectoryExists(path, 'file');
 
   // Perform some pre-processing on the Tracking Plan before writing it.
-  const planJSON = flow<RudderAPI.TrackingPlan[], RudderAPI.TrackingPlan, string>(
-    // Enforce a deterministic ordering to reduce verson control deltas.
-    (plan) => sanitizeTrackingPlan(plan),
-    (plan) => stringify(plan, { space: '\t' }),
-  )(plan);
+  const sanitized = sanitizeTrackingPlan(plan);
+  const planJSON = stringify(sanitized, { space: '\t' }) ?? '';
 
   await writeFile(path, planJSON, {
     encoding: 'utf-8',

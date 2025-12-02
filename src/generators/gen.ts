@@ -516,7 +516,7 @@ async function runGenerator<
       functionDescription: schema.description,
       rawJSONSchema: stringify(raw, {
         space: '\t',
-      }),
+      }) ?? '',
       rawEventName: client.namer.escapeString(schema.name),
       ...t,
     });
@@ -544,7 +544,7 @@ async function runGenerator<
       functionDescription: schema.description,
       rawJSONSchema: stringify(raw, {
         space: '\t',
-      }),
+      }) ?? '',
       rawEventName: client.namer.escapeString(schema.name),
       ...t,
     });
@@ -572,7 +572,7 @@ async function runGenerator<
       functionDescription: schema.description,
       rawJSONSchema: stringify(raw, {
         space: '\t',
-      }),
+      }) ?? '',
       rawEventName: client.namer.escapeString(schema.name),
       ...t,
     });
@@ -600,7 +600,7 @@ async function runGenerator<
       functionDescription: schema.description,
       rawJSONSchema: stringify(raw, {
         space: '\t',
-      }),
+      }) ?? '',
       rawEventName: client.namer.escapeString(schema.name),
       ...t,
     });
@@ -628,7 +628,7 @@ async function runGenerator<
       functionDescription: schema.description,
       rawJSONSchema: stringify(raw, {
         space: '\t',
-      }),
+      }) ?? '',
       rawEventName: client.namer.escapeString(schema.name),
       ...t,
     });

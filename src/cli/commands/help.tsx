@@ -129,7 +129,7 @@ const HelpSection: React.FC<HelpSectionProps> = ({ name, children }) => {
 type HelpRowProps = {
   name: string;
   isDefault?: boolean;
-  description: string | JSX.Element;
+  description: React.ReactNode;
   linesNeeded?: number;
   isHidden?: boolean;
 };
