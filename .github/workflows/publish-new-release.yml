@@ -10,6 +10,9 @@ on:
 env:
   NODE_OPTIONS: '--no-warnings'
 
+permissions:
+  contents: read
+
 jobs:
   release:
     name: Publish new release
