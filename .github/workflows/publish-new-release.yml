@@ -35,9 +35,10 @@ jobs:
 
       - name: Extract version from branch name (for release branches)
         id: extract-version
+        env:
+          BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
         run: |
-          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
-          VERSION=${BRANCH_NAME#hotfix-}
+          VERSION="${BRANCH_NAME#hotfix-}"
           VERSION=${VERSION#release/}
 
           echo "release_version=$VERSION" >> $GITHUB_OUTPUT
