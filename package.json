@@ -18,7 +18,7 @@
     "rudder-typer": "./src/cli/index.js"
   },
   "scripts": {
-    "setup": "npm ci",
+    "setup": "npm install",
     "init": "npm run cli init",
     "dev": "NODE_ENV=development npm run cli",
     "prod": "NODE_ENV=production npm run cli prod",
