@@ -3,3 +3,4 @@ node_modules
 .git
 CHANGELOG.md
 tests/e2e/**/analytics
+**/*.hbs
