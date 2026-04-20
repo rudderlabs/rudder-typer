@@ -106,10 +106,14 @@ export interface Schema {
 {{#each properties}}
 {{#if hasEnum}}
 	{{#uniqueEnum enumName enumValues}}
+	{{#if isUnionEnum}}
+	export type {{enumName}} = {{enumValues}}
+	{{else}}
 	export enum {{enumName}} {
 	{{enumValues}}
 	}
-	
+	{{/if}}
+
 	{{/uniqueEnum}}
 {{/if}}
 {{/each}}
@@ -354,10 +358,14 @@ function withRudderTyperContext{{#unless isBrowser}}<P, T extends PayloadMessage
 {{#each defs}}
 {{#if hasEnum}}
 	{{#uniqueEnum enumName enumValues}}
+	{{#if isUnionEnum}}
+	export type {{enumName}} = {{enumValues}}
+	{{else}}
 	export enum {{enumName}} {
 	{{enumValues}}
 	}
-	
+	{{/if}}
+
 	{{/uniqueEnum}}
 {{/if}}
 {{/each}}

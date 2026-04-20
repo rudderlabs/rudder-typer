@@ -6,7 +6,8 @@ import { Generator, GeneratorClient, type File } from '../gen.js';
 import { toTarget, toModule } from './targets.js';
 import { registerPartial } from '../../templates.js';
 import lodash from 'lodash';
-import { getEnumPropertyTypes, sanitizeEnumKey, sanitizeKey } from '../utils.js';
+import { getEnumPropertyTypes, sanitizeEnumKey } from '../utils.js';
+import { convertToEnum, convertToUnion } from './enums.js';
 
 const { camelCase, upperFirst } = lodash;
 
@@ -47,8 +48,14 @@ type JavaScriptPropertyContext = {
   hasEnum: boolean;
   // The formatted enum name
   enumName?: string;
-  // The formatted enum values
+  // The formatted enum values. For 'enum' style this is the body of an `enum {}`
+  // declaration (e.g. "S_FOO = 'foo',\n  S_BAR = 'bar',"). For 'union' style this
+  // is the body of a `type X = ...` declaration (e.g. "'foo' | 'bar'").
   enumValues?: any;
+  // True when the enum should be rendered as a string literal union (`type X = 'a' | 'b'`)
+  // instead of a nominal enum (`enum X { S_A = 'a', S_B = 'b' }`). Set from
+  // client.options.client.enumStyle.
+  isUnionEnum?: boolean;
   // The ref name of this property.
   _refName?: string;
 };
@@ -113,13 +120,14 @@ export const javascript: Generator<
       type = 'string';
       hasEnum = !!schema.enum;
       if (hasEnum) {
-        const { enumName, enumValues } = generateEnum(client, schema, {
+        const { enumName, enumValues, isUnionEnum } = generateEnum(client, schema, {
           name: client.namer.escapeString(schema.name),
           type,
         });
         overrides.push({
           enumName,
           enumValues,
+          isUnionEnum,
         });
       }
     } else if (schema.type === Type.BOOLEAN) {
@@ -128,13 +136,14 @@ export const javascript: Generator<
       type = 'number';
       hasEnum = !!schema.enum;
       if (hasEnum) {
-        const { enumName, enumValues } = generateEnum(client, schema, {
+        const { enumName, enumValues, isUnionEnum } = generateEnum(client, schema, {
           name: client.namer.escapeString(schema.name),
           type,
         });
         overrides.push({
           enumName,
           enumValues,
+          isUnionEnum,
         });
       }
     }
@@ -196,7 +205,7 @@ export const javascript: Generator<
     const overrides: Partial<JavaScriptPropertyContext>[] = [];
 
     if (hasEnum) {
-      const { enumName, enumValues } = generateEnum(client, schema, {
+      const { enumName, enumValues, isUnionEnum } = generateEnum(client, schema, {
         name: client.namer.escapeString(schema.name),
         type: types.map((t) => t.type).join(' | '),
       });
@@ -204,6 +213,7 @@ export const javascript: Generator<
       overrides.push({
         enumName,
         enumValues,
+        isUnionEnum,
       });
     }
     return conditionallyNullable(
@@ -266,39 +276,24 @@ export const javascript: Generator<
   },
 };
 
-const convertToEnum = (values: any[], type: string) => {
-  const unionTypes = [...new Set(type.split(' | '))];
-
-  return (
-    values
-      .map((value) => {
-        let key, formattedValue;
-
-        if (type === 'number' || (unionTypes.includes('number') && typeof value === 'number')) {
-          key = 'N_' + sanitizeKey(value);
-          formattedValue = `${value}`;
-        } else if (
-          type === 'string' ||
-          (unionTypes.includes('string') && typeof value === 'string')
-        ) {
-          key = 'S_' + sanitizeKey(value);
-          formattedValue = `'${value.toString().replace(/'/g, "\\'").trim()}'`;
-        }
-
-        return key && formattedValue ? `${key} = ${formattedValue}` : null;
-      })
-      .filter(Boolean)
-      .join(',\n    ') + ','
-  );
-};
-
 function generateEnum(
   client: GeneratorClient,
   schema: Schema,
   property: PropertyContext,
-): { enumName: string; enumValues: string | undefined } {
+): { enumName: string; enumValues: string | undefined; isUnionEnum: boolean } {
   let enumName = sanitizeEnumKey(schema.name) + '_' + getEnumPropertyTypes(schema);
-  const enumValues = 'enum' in schema ? convertToEnum(schema.enum!, property.type) : undefined;
+
+  const isUnionEnum =
+    (client.options.client.language === Language.JAVASCRIPT ||
+      client.options.client.language === Language.TYPESCRIPT) &&
+    (client.options.client as { enumStyle?: 'enum' | 'union' }).enumStyle === 'union';
+
+  const enumValues =
+    'enum' in schema
+      ? isUnionEnum
+        ? convertToUnion(schema.enum!, property.type)
+        : convertToEnum(schema.enum!, property.type)
+      : undefined;
 
   if (
     client.options.client.language === Language.JAVASCRIPT ||
@@ -318,6 +313,7 @@ function generateEnum(
   return {
     enumName,
     enumValues,
+    isUnionEnum,
   };
 }
 
