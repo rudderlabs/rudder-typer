@@ -152,6 +152,14 @@ client:
   # Valid values: 'CommonJS','AMD','UMD','System','ES2015','ESNext'
   moduleTarget: 'ESNext'
 
+  # How enum-constrained schemas are emitted in TS/JS output.
+  # Valid values: 'enum' (default), 'union'
+  #   'enum'  -> `export enum X { S_FOO = 'foo' }` (nominal type — required to use enum members at call sites)
+  #   'union' -> `export type X = 'foo' | 'bar'`   (string literal union — assignable from plain strings,
+  #              composes with consumer codebases whose enum-typed values are literal unions or
+  #              differently-named enums)
+  enumStyle: 'enum'
+
 trackingPlans:
   # The RudderStack Tracking Plan that you are generating a client for.
   # Provide your workspace slug and Tracking Plan id

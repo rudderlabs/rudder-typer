@@ -90,6 +90,7 @@ const ConfigSchema = Joi.object().required().keys({
         language: Joi.string().valid('javascript', 'typescript'),
         scriptTarget: Joi.string().optional().valid('ES3', 'ES5', 'ES2015', 'ES2016', 'ES2017', 'ES2018', 'ES2019', 'ESNext', 'Latest'),
         moduleTarget: Joi.string().optional().valid('CommonJS', 'AMD', 'UMD', 'System', 'ES2015', 'ESNext'),
+        enumStyle: Joi.string().optional().valid('enum', 'union'),
       },
     })
     .when('sdk', {

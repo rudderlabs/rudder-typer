@@ -85,10 +85,18 @@ export async function registerStandardHelpers(): Promise<void> {
   });
 
   const processedEnums = new Set();
-  Handlebars.registerHelper('uniqueEnum', function (enumName, enumValues, options) {
+  Handlebars.registerHelper('uniqueEnum', function (enumName, enumValues, isUnionEnum, options) {
+    // Handlebars passes the block's `options` as the last positional arg regardless
+    // of how many args were declared at the call site. When callers write
+    // `{{#uniqueEnum enumName enumValues}}` (two args), `isUnionEnum` is actually
+    // the options object and the real options is undefined — detect and shift.
+    if (options === undefined) {
+      options = isUnionEnum;
+      isUnionEnum = undefined;
+    }
     if (!processedEnums.has(enumName)) {
       processedEnums.add(enumName);
-      return options.fn({ enumName, enumValues });
+      return options.fn({ enumName, enumValues, isUnionEnum });
     }
     return '';
   });
