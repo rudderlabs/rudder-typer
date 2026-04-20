@@ -36,6 +36,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install Dependencies
         env:
@@ -51,10 +52,8 @@ jobs:
       - name: Publish package to NPM
         env:
           HUSKY: 0
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
         run: |
-          npm set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
           npm run build
           npm run release:ci
 
