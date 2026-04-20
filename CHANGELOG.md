@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.7.4](https://github.com/rudderlabs/rudder-typer/compare/v1.7.3...v1.7.4) (2026-04-20)
+
+
+### Bug Fixes
+
+* **ci:** use App Token for branch deletion steps [SEC-58] ([c66a068](https://github.com/rudderlabs/rudder-typer/commit/c66a068ac398b130f1a80a1a31b905d01d51ed37))
+* **ci:** use App Token for conventional-github-releaser [SEC-58] ([c502144](https://github.com/rudderlabs/rudder-typer/commit/c5021442f1a31ffdd9a04b2d3667b5363ebc5f02))
+* **vuln:** pin and bump action refs (SEC-171) ([#223](https://github.com/rudderlabs/rudder-typer/issues/223)) ([fbd4786](https://github.com/rudderlabs/rudder-typer/commit/fbd478691f83f85ddf304cd7599be90222b01714))
+* **vuln:** remediate GHA script injection ([#206](https://github.com/rudderlabs/rudder-typer/issues/206)) ([34ea400](https://github.com/rudderlabs/rudder-typer/commit/34ea400ae5b4e13300fba0b5208004fd0ea151ad))
+
 ### [1.7.3](https://github.com/rudderlabs/rudder-typer/compare/v1.7.2...v1.7.3) (2025-08-12)
 
 

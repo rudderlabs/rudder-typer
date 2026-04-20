@@ -19,6 +19,12 @@ export default {
     ],
   },
   transformIgnorePatterns: ['<rootDir>/dist/', '<rootDir>/reports/', '<rootDir>/node_modules/'],
+  // Allow tests to traverse source files that use ESM-style relative imports with
+  // explicit ".js" suffixes (e.g. `import './ast.js'`). ts-jest resolves these
+  // back to their TypeScript source by stripping the suffix.
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
   testMatch: [
     '<rootDir>/tests/**/*.(spec|test).(j|t)s?(x)',
     '<rootDir>/src/**/*.(spec|test).(j|t)s?(x)',

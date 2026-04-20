@@ -15,6 +15,8 @@ export enum Language {
   JAVA = 'java',
 }
 
+export type EnumStyle = 'enum' | 'union';
+
 export type TypeScriptOptions = {
   sdk: SDK.WEB | SDK.NODE;
   language: Language.TYPESCRIPT;
@@ -22,6 +24,12 @@ export type TypeScriptOptions = {
   // present on the tracking plan
   defSupport: true;
   uniqueEnums?: boolean;
+  // Output style for enum-constrained schemas. Defaults to 'enum'.
+  //   'enum'  → emits `export enum X { S_FOO = 'foo', S_BAR = 'bar' }` (nominal type)
+  //   'union' → emits `export type X = 'foo' | 'bar'` (string literal union, structurally
+  //             assignable from plain string literals — pairs well with consumers whose
+  //             source values are typed as literal unions or differently-named enums.)
+  enumStyle?: EnumStyle;
 };
 
 export type JavaScriptOptions = {
@@ -42,6 +50,9 @@ export type JavaScriptOptions = {
   // defSupport is true for Javascript as well
   defSupport: true;
   uniqueEnums?: boolean;
+  // See TypeScriptOptions.enumStyle. JavaScript output is transpiled from TypeScript;
+  // when 'union' is set the union-typed declaration is erased and only runtime values remain.
+  enumStyle?: EnumStyle;
 };
 
 export type ObjectiveCOptions = {
