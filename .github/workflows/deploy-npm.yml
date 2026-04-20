@@ -52,7 +52,6 @@ jobs:
       - name: Publish package to NPM
         env:
           HUSKY: 0
-          NPM_CONFIG_PROVENANCE: true
         run: |
           npm run build
           npm run release:ci
