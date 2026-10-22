@@ -30,7 +30,6 @@
     "format:check": "prettier --check ./src/**/*.{ts,tsx}",
     "release:ci": "cd dist && npm publish --access public",
     "pre-commit": "npm run build && lint-staged",
-    "prepare": "git config --global --includes core.hooksPath || husky",
     "release": "npx standard-version",
     "release:github": "npx conventional-github-releaser -p angular"
   },
