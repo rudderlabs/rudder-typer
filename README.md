@@ -17,6 +17,12 @@
 
 # RudderTyper
 
+> [!WARNING]
+> **RudderTyper v1 (this repository, the `rudder-typer` npm package) is deprecated.** It receives no new features, fixes, or releases, and this repository will be archived.
+>
+> Use RudderTyper v2, which ships in the [Rudder CLI](https://github.com/rudderlabs/rudder-iac) as `rudder-cli typer generate`. It generates TypeScript, Kotlin, and Swift clients. See the [RudderTyper v2 documentation](https://www.rudderstack.com/docs/rudder-cli/ruddertyper-v2/).
+
+
 **RudderTyper** is a tool for generating strongly-typed [**RudderStack**](https://www.rudderstack.com/) analytics libraries based on your pre-defined tracking plan spec.
 
 <p align="center">
